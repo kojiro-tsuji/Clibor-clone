@@ -317,7 +317,8 @@ function App() {
                   key={index}
                   onClick={() => PasteText(item)}
                   onContextMenu={(e) => handleContextMenu(e, item)}
-                  className={`flex items-center justify-between py-1 px-1.5 cursor-pointer rounded ${
+                  style={{ WebkitAppRegion: 'no-drag' } as any}
+                  className={`flex items-center justify-between py-1 px-1.5 cursor-pointer rounded no-drag-area ${
                     selectedIndex === index
                       ? 'bg-[#f5ebd6] text-[#4a3e3d] font-semibold'
                       : 'hover:bg-[#f6f1e8] text-[#6b5b52]'
@@ -346,7 +347,8 @@ function App() {
                 <button
                   key={cat.id}
                   onClick={() => setSelectedCategoryId(cat.id)}
-                  className={`text-xs font-semibold whitespace-nowrap ${
+                  style={{ WebkitAppRegion: 'no-drag' } as any}
+                  className={`text-xs font-semibold whitespace-nowrap no-drag-area ${
                     selectedCategoryId === cat.id
                       ? 'text-[#8b7668] underline font-bold'
                       : 'text-[#a39485] hover:text-[#8b7668]'
@@ -366,7 +368,8 @@ function App() {
                   <div
                     key={phrase.id}
                     onClick={() => PasteText(phrase.content)}
-                    className="group flex items-center justify-between py-1 px-1.5 hover:bg-[#f6f1e8] rounded cursor-pointer text-[#4a3e3d]"
+                    style={{ WebkitAppRegion: 'no-drag' } as any}
+                    className="group flex items-center justify-between py-1 px-1.5 hover:bg-[#f6f1e8] rounded cursor-pointer text-[#4a3e3d] no-drag-area"
                   >
                     <div className="min-w-0 flex-1 mr-2">
                       <span className="font-semibold text-[#6b5b52]">{phrase.title}</span>
@@ -374,7 +377,8 @@ function App() {
                     </div>
                     <button
                       onClick={(e) => handleDeletePhrase(phrase.id, e)}
-                      className="opacity-0 group-hover:opacity-100 text-[10px] text-red-500 hover:underline"
+                      style={{ WebkitAppRegion: 'no-drag' } as any}
+                      className="opacity-0 group-hover:opacity-100 text-[10px] text-red-500 hover:underline no-drag-area"
                       title="削除"
                     >
                       [✕]
@@ -387,12 +391,13 @@ function App() {
               {!isAddingPhrase ? (
                 <button
                   onClick={() => setIsAddingPhrase(true)}
-                  className="w-full py-1 mt-2 text-center text-[#8b7668] border border-dashed border-[#e9e3d8] hover:bg-[#ede6db] rounded"
+                  style={{ WebkitAppRegion: 'no-drag' } as any}
+                  className="w-full py-1 mt-2 text-center text-[#8b7668] border border-dashed border-[#e9e3d8] hover:bg-[#ede6db] rounded no-drag-area"
                 >
                   + 定型文を追加
                 </button>
               ) : (
-                <form onSubmit={handleAddPhrase} className="bg-[#f4efe6]/40 border border-[#e9e3d8] p-2 rounded space-y-1.5 mt-2">
+                <form onSubmit={handleAddPhrase} style={{ WebkitAppRegion: 'no-drag' } as any} className="bg-[#f4efe6]/40 border border-[#e9e3d8] p-2 rounded space-y-1.5 mt-2 no-drag-area">
                   <input
                     type="text"
                     placeholder="タイトル"
@@ -517,12 +522,10 @@ function App() {
       {contextMenu && (
         <div 
           style={{ top: contextMenu.y, left: contextMenu.x }}
-          className="fixed z-50 bg-[#faf8f5] border border-[#dfcca6] rounded shadow-sm text-xs py-1 text-[#4a3e3d] cursor-pointer hover:bg-[#f5ebd6] no-drag-area"
+          className="fixed z-50 bg-[#faf8f5] border border-[#dfcca6] rounded shadow-sm text-xs py-1.5 px-3 text-[#4a3e3d] whitespace-nowrap cursor-pointer hover:bg-[#f5ebd6] no-drag-area font-semibold"
           onClick={() => openSaveModal(contextMenu.text)}
         >
-          <div className="px-3 py-1 font-semibold">
-            定型文として保存
-          </div>
+          定型文として保存
         </div>
       )}
 
