@@ -95,13 +95,13 @@ function App() {
     ClearFifoQueue().catch(err => console.error("Clear FIFO error:", err))
   }
 
-  const triggerPaste = (text: string) => {
+  const triggerPaste = (text: string, delay = 10) => {
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur()
     }
     setTimeout(() => {
       PasteText(text)
-    }, 10)
+    }, delay)
   }
 
   const handleContextMenu = (e: React.MouseEvent, text: string) => {
@@ -249,7 +249,7 @@ function App() {
         } else if (e.key === 'Enter') {
           e.preventDefault()
           if (filteredHistory[selectedIndex]) {
-            triggerPaste(filteredHistory[selectedIndex])
+            triggerPaste(filteredHistory[selectedIndex], 150)
           }
         }
       } else if (activeTab === 'phrase') {
@@ -296,7 +296,7 @@ function App() {
             } else {
               const phrase = filteredPhrases[selectedIndex - 1]
               if (phrase) {
-                triggerPaste(phrase.content)
+                triggerPaste(phrase.content, 150)
               }
             }
           }
