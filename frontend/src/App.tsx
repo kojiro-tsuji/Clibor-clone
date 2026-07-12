@@ -172,7 +172,7 @@ function App() {
         } else if (e.key === 'ArrowUp' || e.key === 'k') {
           e.preventDefault()
           setSelectedIndex((prev) => (prev - 1 + listLength) % listLength)
-        } else if (e.key === 'Enter' || (e.ctrlKey && e.key.toLowerCase() === 'v')) {
+        } else if (e.ctrlKey && e.key.toLowerCase() === 'v') {
           e.preventDefault()
           if (filteredHistory[selectedIndex]) {
             PasteText(filteredHistory[selectedIndex])
@@ -386,7 +386,11 @@ function App() {
               <div className="text-[10px] text-[#a39485] space-y-0.5">
                 <div className="flex justify-between">
                   <span>表示</span>
-                  <span>Ctrl 2回 / Alt + C</span>
+                  <span>Ctrl 2回</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>コピー</span>
+                  <span>Ctrl + C (自動履歴追加)</span>
                 </div>
                 <div className="flex justify-between">
                   <span>FIFO</span>
@@ -398,7 +402,7 @@ function App() {
                 </div>
                 <div className="flex justify-between">
                   <span>貼り付け</span>
-                  <span>Ctrl + V / Enter</span>
+                  <span>Ctrl + V</span>
                 </div>
               </div>
             </div>

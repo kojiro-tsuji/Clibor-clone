@@ -30,13 +30,15 @@ func (m *Manager) Start(ctx context.Context) {
 	watchCtx, cancel := context.WithCancel(ctx)
 	m.cancel = cancel
 
-	// 1. golang.design/x/hotkey による標準ホットキー (Alt + C) の登録
+	// 1. golang.design/x/hotkey による標準ホットキー (Alt + C) の登録は不要なため無効化しました
+	/*
 	go func() {
 		err := m.registerStandardHotkey(watchCtx)
 		if err != nil {
 			log.Printf("Failed to register standard hotkey: %v", err)
 		}
 	}()
+	*/
 
 	// 2. golang.design/x/hotkey による FIFOホットキー (Ctrl + G) の登録
 	go func() {
