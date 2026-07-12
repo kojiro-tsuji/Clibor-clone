@@ -20,8 +20,8 @@ func main() {
 	// Wailsアプリの起動構成設定
 	err := wails.Run(&options.App{
 		Title:             "Clibor Clone",
-		Width:             360,
-		Height:            550,
+		Width:             240,
+		Height:            380,
 		StartHidden:       false, // 起動時にウィンドウを直接表示する（Webview2の初期化不良を防ぐため）
 		AlwaysOnTop:       true, // クリップボードツールとして最前面表示
 		Frameless:         true, // スッキリしたUIのために枠なしウィンドウに設定
