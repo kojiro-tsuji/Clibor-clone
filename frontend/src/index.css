@@ -30,3 +30,12 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
 }
+
+/* Wails ウィンドウドラッグ用クラス */
+.drag-area {
+  -webkit-app-region: drag;
+}
+
+.no-drag-area {
+  -webkit-app-region: no-drag;
+}

@@ -194,24 +194,19 @@ function App() {
   }, [activeTab, searchQuery])
 
   return (
-    <div 
-      style={{ WebkitAppRegion: 'drag' } as any}
-      className="flex flex-col h-screen bg-[#121214] text-zinc-200 select-none overflow-hidden font-sans"
-    >
+    <div className="flex flex-col h-screen bg-[#121214] text-zinc-200 select-none overflow-hidden font-sans">
       
       {/* 枠なし移動用ドラッグヘッダー */}
       <header 
-        style={{ WebkitAppRegion: 'drag' } as any}
-        className="flex items-center justify-between px-4 py-3 bg-zinc-950/40 border-b border-white/5 backdrop-blur-md shrink-0 cursor-move"
+        className="flex items-center justify-between px-4 py-3 bg-zinc-950/40 border-b border-white/5 backdrop-blur-md shrink-0 cursor-move drag-area"
       >
         <div className="flex items-center space-x-2">
           <div className="w-2 h-2 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 animate-pulse" />
           <span className="text-[10px] font-bold tracking-wider text-zinc-400 font-mono">CLIBOR CLONE</span>
         </div>
         <button
-          style={{ WebkitAppRegion: 'no-drag' } as any}
           onClick={() => Quit()}
-          className="p-1 rounded hover:bg-red-500/10 text-zinc-500 hover:text-red-400 transition-all duration-150"
+          className="p-1 rounded hover:bg-red-500/10 text-zinc-500 hover:text-red-400 transition-all duration-150 no-drag-area"
           title="アプリ終了"
         >
           <Power size={13} />
@@ -219,7 +214,7 @@ function App() {
       </header>
 
       {/* 検索バー */}
-      <div style={{ WebkitAppRegion: 'no-drag' } as any} className="p-3 shrink-0">
+      <div className="p-3 shrink-0">
         <div className="relative">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
           <input
@@ -255,7 +250,6 @@ function App() {
                 <div
                   key={index}
                   onClick={() => PasteText(item)}
-                  style={{ WebkitAppRegion: 'no-drag' } as any}
                   className={`group flex items-start justify-between p-2 rounded-lg border text-xs cursor-pointer transition-all duration-100 ${
                     selectedIndex === index
                       ? 'bg-indigo-600/10 border-indigo-500/40 text-white'
@@ -298,7 +292,6 @@ function App() {
                 <button
                   key={cat.id}
                   onClick={() => setSelectedCategoryId(cat.id)}
-                  style={{ WebkitAppRegion: 'no-drag' } as any}
                   className={`px-3 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-all duration-150 ${
                     selectedCategoryId === cat.id
                       ? 'bg-indigo-600 text-white'
@@ -322,7 +315,6 @@ function App() {
                   <div
                     key={phrase.id}
                     onClick={() => PasteText(phrase.content)}
-                    style={{ WebkitAppRegion: 'no-drag' } as any}
                     className="group flex items-start justify-between p-2 rounded-lg bg-zinc-900/30 border border-zinc-800/40 hover:bg-zinc-800/30 hover:border-zinc-850 text-xs cursor-pointer transition-all duration-100 text-zinc-300"
                   >
                     <div className="min-w-0 flex-1">
@@ -350,18 +342,13 @@ function App() {
               {!isAddingPhrase ? (
                 <button
                   onClick={() => setIsAddingPhrase(true)}
-                  style={{ WebkitAppRegion: 'no-drag' } as any}
                   className="w-full flex items-center justify-center space-x-1.5 py-1.5 bg-zinc-900/60 hover:bg-zinc-800/60 border border-dashed border-zinc-800 hover:border-zinc-700 rounded-lg text-xs text-indigo-400 hover:text-indigo-300 transition-all duration-150"
                 >
                   <Plus size={13} />
                   <span>新規定型文を追加</span>
                 </button>
               ) : (
-                <form 
-                  onSubmit={handleAddPhrase}
-                  style={{ WebkitAppRegion: 'no-drag' } as any}
-                  className="bg-zinc-900/40 border border-zinc-850 p-2.5 rounded-lg space-y-2"
-                >
+                <form onSubmit={handleAddPhrase} className="bg-zinc-900/40 border border-zinc-850 p-2.5 rounded-lg space-y-2">
                   <div className="text-[10px] font-semibold text-zinc-400">定型文の新規作成</div>
                   <input
                     type="text"
@@ -404,10 +391,7 @@ function App() {
         {activeTab === 'settings' && (
           <div className="space-y-3 text-xs">
             {/* スタートアップ設定 */}
-            <div 
-              style={{ WebkitAppRegion: 'no-drag' } as any}
-              className="bg-zinc-900/30 border border-zinc-800/40 p-3 rounded-lg flex items-center justify-between"
-            >
+            <div className="bg-zinc-900/30 border border-zinc-800/40 p-3 rounded-lg flex items-center justify-between">
               <div>
                 <div className="font-semibold text-zinc-300">スタートアップに登録</div>
                 <div className="text-[10px] text-zinc-500 mt-0.5">PC起動時に自動で常駐を開始します</div>
@@ -426,10 +410,7 @@ function App() {
               </button>
             </div>
 
-            <div 
-              style={{ WebkitAppRegion: 'no-drag' } as any}
-              className="bg-zinc-900/30 border border-zinc-800/40 p-3 rounded-lg space-y-2"
-            >
+            <div className="bg-zinc-900/30 border border-zinc-800/40 p-3 rounded-lg space-y-2">
               <div className="font-semibold text-zinc-300">キーボード操作</div>
               <div className="space-y-1 text-zinc-500">
                 <div className="flex justify-between">
@@ -447,10 +428,7 @@ function App() {
               </div>
             </div>
 
-            <div 
-              style={{ WebkitAppRegion: 'no-drag' } as any}
-              className="bg-zinc-900/30 border border-zinc-800/40 p-3 rounded-lg space-y-1"
-            >
+            <div className="bg-zinc-900/30 border border-zinc-800/40 p-3 rounded-lg space-y-1">
               <div className="font-semibold text-zinc-300">アプリケーション情報</div>
               <div className="text-zinc-500 space-y-0.5">
                 <div>プロダクト: Clibor Clone (Wails MVP)</div>
@@ -461,7 +439,6 @@ function App() {
 
             <button
               onClick={() => Quit()}
-              style={{ WebkitAppRegion: 'no-drag' } as any}
               className="w-full flex items-center justify-center space-x-1.5 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/30 text-red-400 rounded-lg font-medium transition-all duration-150"
             >
               <Power size={13} />
@@ -472,7 +449,7 @@ function App() {
       </main>
 
       {/* フッターナビゲーションバー */}
-      <footer style={{ WebkitAppRegion: 'no-drag' } as any} className="flex border-t border-white/5 bg-zinc-950/40 backdrop-blur-md shrink-0">
+      <footer className="flex border-t border-white/5 bg-zinc-950/40 backdrop-blur-md shrink-0">
         <button
           onClick={() => setActiveTab('history')}
           className={`flex-1 flex flex-col items-center justify-center py-2 text-[9px] font-medium transition-all duration-150 ${
