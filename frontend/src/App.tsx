@@ -215,12 +215,16 @@ function App() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // 検索入力欄にフォーカスがある時はキーボード操作を行わない
-      if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') {
+      const isInputFocused = document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA'
+      if (isInputFocused) {
+        const controlKeys = ['ArrowDown', 'ArrowUp', 'j', 'k', 'Enter', 'Escape', 'ArrowLeft', 'h']
+        if (!controlKeys.includes(e.key)) {
+          return // 文字入力やBackSpace等はそのままインプットに通す
+        }
         if (e.key === 'Escape') {
           (document.activeElement as HTMLElement).blur()
+          return
         }
-        return
       }
 
       if (activeTab === 'history') {
@@ -384,11 +388,11 @@ function App() {
                       : 'hover:bg-[#f6f1e8] text-[#6b5b52]'
                   }`}
                 >
-                  <div className="flex items-center min-w-0 flex-1">
-                    <span className="font-mono text-[9px] text-[#a39485] mr-2 shrink-0">
+                  <div className="flex items-center min-w-0 flex-1 pointer-events-none">
+                    <span className="font-mono text-[9px] text-[#a39485] mr-2 shrink-0 pointer-events-none">
                       {index + 1}.
                     </span>
-                    <span className="truncate break-all leading-normal">
+                    <span className="truncate break-all leading-normal pointer-events-none">
                       {item.replace(/\s+/g, ' ')}
                     </span>
                   </div>
@@ -461,9 +465,9 @@ function App() {
                             : 'hover:bg-[#f6f1e8] text-[#6b5b52]'
                         }`}
                       >
-                        <div className="min-w-0 flex-1 mr-2">
-                          <span className="font-semibold text-[#6b5b52]">{phrase.title}</span>
-                          <span className="text-[10px] text-[#a39485] ml-2 truncate">{phrase.content}</span>
+                        <div className="min-w-0 flex-1 mr-2 pointer-events-none">
+                          <span className="font-semibold text-[#6b5b52] pointer-events-none">{phrase.title}</span>
+                          <span className="text-[10px] text-[#a39485] ml-2 truncate pointer-events-none">{phrase.content}</span>
                         </div>
                         <button
                           onClick={(e) => {
