@@ -175,7 +175,7 @@ function App() {
         } else if (e.key === 'ArrowUp' || e.key === 'k') {
           e.preventDefault()
           setSelectedIndex((prev) => (prev - 1 + listLength) % listLength)
-        } else if (e.key === 'Enter') {
+        } else if (e.key === 'Enter' || (e.ctrlKey && e.key.toLowerCase() === 'v')) {
           e.preventDefault()
           if (filteredHistory[selectedIndex]) {
             PasteText(filteredHistory[selectedIndex])
@@ -194,11 +194,13 @@ function App() {
   }, [activeTab, searchQuery])
 
   return (
-    <div className="flex flex-col h-screen bg-[#121214] text-zinc-200 select-none overflow-hidden font-sans">
+    <div 
+      style={{ WebkitAppRegion: 'drag' } as any}
+      className="flex flex-col h-screen bg-[#121214] text-zinc-200 select-none overflow-hidden font-sans"
+    >
       
       {/* 枠なし移動用ドラッグヘッダー */}
       <header 
-        style={{ WebkitAppRegion: 'drag' } as any}
         className="flex items-center justify-between px-4 py-3 bg-zinc-950/40 border-b border-white/5 backdrop-blur-md shrink-0"
       >
         <div className="flex items-center space-x-2">
@@ -216,7 +218,7 @@ function App() {
       </header>
 
       {/* 検索バー */}
-      <div className="p-3 shrink-0">
+      <div style={{ WebkitAppRegion: 'no-drag' } as any} className="p-3 shrink-0">
         <div className="relative">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
           <input
@@ -238,7 +240,7 @@ function App() {
       </div>
 
       {/* メインコンテンツエリア */}
-      <main className="flex-1 overflow-y-auto px-3 pb-3">
+      <main style={{ WebkitAppRegion: 'no-drag' } as any} className="flex-1 overflow-y-auto px-3 pb-3">
         {/* --- 履歴タブ --- */}
         {activeTab === 'history' && (
           <div className="space-y-1">
@@ -425,7 +427,7 @@ function App() {
                 </div>
                 <div className="flex justify-between">
                   <span>貼り付け</span>
-                  <span className="font-mono bg-zinc-800 px-1 py-0.2 rounded text-zinc-450">Enterキー</span>
+                  <span className="font-mono bg-zinc-800 px-1 py-0.2 rounded text-zinc-450">Ctrl + V / Enter</span>
                 </div>
               </div>
             </div>
@@ -451,7 +453,7 @@ function App() {
       </main>
 
       {/* フッターナビゲーションバー */}
-      <footer className="flex border-t border-white/5 bg-zinc-950/40 backdrop-blur-md shrink-0">
+      <footer style={{ WebkitAppRegion: 'no-drag' } as any} className="flex border-t border-white/5 bg-zinc-950/40 backdrop-blur-md shrink-0">
         <button
           onClick={() => setActiveTab('history')}
           className={`flex-1 flex flex-col items-center justify-center py-2 text-[9px] font-medium transition-all duration-150 ${
