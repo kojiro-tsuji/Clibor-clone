@@ -24,6 +24,9 @@ var (
 	setClipboardData = user32DLL.NewProc("SetClipboardData")
 	getClipboardData = user32DLL.NewProc("GetClipboardData")
 
+	getForegroundWindow = user32DLL.NewProc("GetForegroundWindow")
+	setForegroundWindow = user32DLL.NewProc("SetForegroundWindow")
+
 	kernel32DLL   = syscall.NewLazyDLL("kernel32.dll")
 	globalAlloc   = kernel32DLL.NewProc("GlobalAlloc")
 	globalFree    = kernel32DLL.NewProc("GlobalFree")

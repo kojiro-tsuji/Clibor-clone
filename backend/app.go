@@ -18,7 +18,8 @@ type App struct {
 	db            *db.DB
 	monitor       *clipboard.Monitor
 	hkMgr         *hotkey.Manager
-	isVisible     bool
+	isVisible      bool
+	lastActiveHWND uintptr
 
 	fifoMu        sync.Mutex
 	isFifo        bool
@@ -88,6 +89,9 @@ func (a *App) ToggleWindow() {
 		wailsRuntime.WindowHide(a.ctx)
 		a.isVisible = false
 	} else {
+		// 表示直前に、現在のアクティブウィンドウのハンドルを記録しておく
+		a.lastActiveHWND, _, _ = getForegroundWindow.Call()
+
 		wailsRuntime.WindowShow(a.ctx)
 		wailsRuntime.WindowUnminimise(a.ctx)
 		a.isVisible = true
@@ -120,10 +124,12 @@ func (a *App) PasteText(text string) {
 	// 1. クリップボードへのセット (自己コピーによる重複検知を防ぐセーフライターを使用)
 	a.writeClipboardSafely(text)
 
-	// 2. ウィンドウを非表示にし、フォーカスを元のアプリに戻す
-	a.HideWindow()
+	// 2. 画面は閉じずに、元のアプリ（保存したHWND）へフォーカスだけを戻す
+	if a.lastActiveHWND != 0 {
+		_, _, _ = setForegroundWindow.Call(a.lastActiveHWND)
+	}
 
-	// 3. フォーカス遷移を待つ (220msに微増させて元のアプリのフォーカス復元を確実にする)
+	// 3. フォーカス遷移を待つ (元のアプリのフォーカス復元を確実にする)
 	time.Sleep(220 * time.Millisecond)
 
 	// 4. OSに応じた Ctrl+V エミュレーションを実行
