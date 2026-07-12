@@ -14,15 +14,21 @@ import (
 )
 
 type App struct {
-	ctx       context.Context
-	db        *db.DB
-	monitor   *clipboard.Monitor
-	hkMgr     *hotkey.Manager
-	isVisible bool
+	ctx           context.Context
+	db            *db.DB
+	monitor       *clipboard.Monitor
+	hkMgr         *hotkey.Manager
+	isVisible     bool
 
-	fifoMu    sync.Mutex
-	isFifo    bool
-	fifoQueue []string
+	fifoMu        sync.Mutex
+	isFifo        bool
+	fifoQueue     []string
+
+	lastWrittenMu sync.Mutex
+	lastWritten   string
+
+	lastCtrlVMu   sync.Mutex
+	lastCtrlV     time.Time
 }
 
 func NewApp() *App {
@@ -108,11 +114,8 @@ func (a *App) GetHistory(limit int) []string {
 
 // PasteText は指定したテキストをクリップボードに格納し、元のウィンドウにペーストします。
 func (a *App) PasteText(text string) {
-	// 1. クリップボードへのセット (golang.design/x/clipboard を使う想定)
-	// (監視側が自分自身による変更を検知して無限ループするのを防ぐため、
-	//  一時的に監視を無効化するか、またはDBの重複回避ロジックで弾く必要があります。
-	//  今回はDB側で直近と同一テキストなら無視するロジックが入っています)
-	clipboardWriteText(text)
+	// 1. クリップボードへのセット (自己コピーによる重複検知を防ぐセーフライターを使用)
+	a.writeClipboardSafely(text)
 
 	// 2. ウィンドウを非表示にし、フォーカスを元のアプリに戻す
 	a.HideWindow()
@@ -189,6 +192,15 @@ func (a *App) IsAutoStartEnabled() bool {
 
 // handleNewCopy は新しいコピーが発生した時の FIFO 制御処理です。
 func (a *App) handleNewCopy(text string) {
+	// 自分がクリップボードに書き込んだテキストは監視対象から除外する
+	a.lastWrittenMu.Lock()
+	if a.lastWritten == text {
+		a.lastWritten = "" // 1回消費したらクリア
+		a.lastWrittenMu.Unlock()
+		return
+	}
+	a.lastWrittenMu.Unlock()
+
 	a.fifoMu.Lock()
 	defer a.fifoMu.Unlock()
 
@@ -205,7 +217,7 @@ func (a *App) handleNewCopy(text string) {
 
 	// 最初に追加されたテキストがあれば、それを即時クリップボードにセットして最初のペースト対象にする
 	if len(a.fifoQueue) == 1 {
-		clipboardWriteText(text)
+		a.writeClipboardSafely(text)
 	}
 
 	wailsRuntime.EventsEmit(a.ctx, "fifo-status-changed", a.isFifo, a.fifoQueue)
@@ -242,9 +254,17 @@ func (a *App) GetFifoQueue() []string {
 // ClearFifoQueue は FIFO キューをクリアし、FIFOモードを解除します。
 func (a *App) ClearFifoQueue() {
 	a.fifoMu.Lock()
-	defer a.fifoMu.Unlock()
-
 	a.isFifo = false
 	a.fifoQueue = nil
-	wailsRuntime.EventsEmit(a.ctx, "fifo-status-changed", a.isFifo, a.fifoQueue)
+	a.fifoMu.Unlock()
+	wailsRuntime.EventsEmit(a.ctx, "fifo-status-changed", false, nil)
+}
+
+// writeClipboardSafely はアプリによるクリップボード書き込みをマークし、監視による重複追加を防ぎます。
+func (a *App) writeClipboardSafely(text string) {
+	a.lastWrittenMu.Lock()
+	a.lastWritten = text
+	a.lastWrittenMu.Unlock()
+
+	clipboardWriteText(text)
 }

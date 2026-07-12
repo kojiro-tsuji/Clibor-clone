@@ -80,8 +80,6 @@ func (a *App) watchCtrlV(ctx context.Context) {
 	ticker := time.NewTicker(30 * time.Millisecond)
 	defer ticker.Stop()
 
-	var vPressed = false
-
 	for {
 		select {
 		case <-ctx.Done():
@@ -104,13 +102,19 @@ func (a *App) watchCtrlV(ctx context.Context) {
 			vDown := (retV & 0x8000) != 0
 
 			if ctrlDown && vDown {
-				if !vPressed {
-					vPressed = true
+				a.lastCtrlVMu.Lock()
+				timeSinceLast := time.Since(a.lastCtrlV)
+				a.lastCtrlVMu.Unlock()
+
+				// クールダウン（350ms）で多重フック（チャタリング）を防止
+				if timeSinceLast > 350*time.Millisecond {
+					a.lastCtrlVMu.Lock()
+					a.lastCtrlV = time.Now()
+					a.lastCtrlVMu.Unlock()
+
 					// 別ゴルーチンで非同期にポップアップ処理（デッドロック防止）
 					go a.handleCtrlVPressed()
 				}
-			} else {
-				vPressed = false
 			}
 		}
 	}
@@ -118,7 +122,7 @@ func (a *App) watchCtrlV(ctx context.Context) {
 
 func (a *App) handleCtrlVPressed() {
 	// OSが現在のクリップボードテキストを貼り付けるのを少し待つ（タイミング調整）
-	time.Sleep(120 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 
 	a.fifoMu.Lock()
 	defer a.fifoMu.Unlock()
@@ -131,9 +135,9 @@ func (a *App) handleCtrlVPressed() {
 	a.fifoQueue = a.fifoQueue[1:]
 
 	if len(a.fifoQueue) > 0 {
-		// 次の要素をクリップボードにセットして、次のCtrl+Vに備える
+		// 次の要素をクリップボードにセットして、次のCtrl+Vに備える (自己コピー無視を呼ぶ)
 		nextText := a.fifoQueue[0]
-		clipboardWriteText(nextText)
+		a.writeClipboardSafely(nextText)
 	} else {
 		// すべて貼り付け終わったら自動的に通常モードに戻る
 		a.isFifo = false
