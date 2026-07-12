@@ -46,6 +46,22 @@ function App() {
   // キーボードナビゲーション用
   const [selectedIndex, setSelectedIndex] = useState<number>(0)
 
+  // コンテキストメニューと定型文保存モーダル用
+  const [contextMenu, setContextMenu] = useState<{ x: number, y: number, text: string } | null>(null)
+  const [modalText, setModalText] = useState<string>('')
+  const [modalTitle, setModalTitle] = useState<string>('')
+  const [modalCategoryId, setModalCategoryId] = useState<number>(0)
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false)
+
+  // グローバルクリックでコンテキストメニューを閉じる
+  useEffect(() => {
+    const handleGlobalClick = () => {
+      setContextMenu(null)
+    }
+    window.addEventListener('click', handleGlobalClick)
+    return () => window.removeEventListener('click', handleGlobalClick)
+  }, [])
+
   // FIFO設定用
   const [isFifoMode, setIsFifoMode] = useState(false)
   const [fifoQueue, setFifoQueue] = useState<string[]>([])
@@ -74,6 +90,41 @@ function App() {
 
   const handleClearFifo = () => {
     ClearFifoQueue().catch(err => console.error("Clear FIFO error:", err))
+  }
+
+  const handleContextMenu = (e: React.MouseEvent, text: string) => {
+    e.preventDefault()
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      text: text
+    })
+  }
+
+  const openSaveModal = (text: string) => {
+    setModalText(text)
+    setModalTitle(text.substring(0, 10).replace(/\s+/g, ' '))
+    setModalCategoryId(selectedCategoryId || (categories[0]?.id || 0))
+    setIsModalOpen(true)
+    setContextMenu(null)
+  }
+
+  const handleSaveFromModal = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!modalCategoryId || !modalTitle.trim() || !modalText.trim()) return
+
+    AddPhrase(modalCategoryId, modalTitle, modalText).then((success: boolean) => {
+      if (success) {
+        setIsModalOpen(false)
+        setModalTitle('')
+        setModalText('')
+        if (selectedCategoryId === modalCategoryId) {
+          GetPhrases(modalCategoryId).then((res: any) => {
+            if (res) setPhrases(res)
+          })
+        }
+      }
+    })
   }
 
 
@@ -265,6 +316,7 @@ function App() {
                 <div
                   key={index}
                   onClick={() => PasteText(item)}
+                  onContextMenu={(e) => handleContextMenu(e, item)}
                   className={`flex items-center justify-between py-1 px-1.5 cursor-pointer rounded ${
                     selectedIndex === index
                       ? 'bg-[#f5ebd6] text-[#4a3e3d] font-semibold'
@@ -460,6 +512,82 @@ function App() {
           設定
         </button>
       </footer>
+
+      {/* 右クリックコンテキストメニュー */}
+      {contextMenu && (
+        <div 
+          style={{ top: contextMenu.y, left: contextMenu.x }}
+          className="fixed z-50 bg-[#faf8f5] border border-[#dfcca6] rounded shadow-sm text-xs py-1 text-[#4a3e3d] cursor-pointer hover:bg-[#f5ebd6] no-drag-area"
+          onClick={() => openSaveModal(contextMenu.text)}
+        >
+          <div className="px-3 py-1 font-semibold">
+            定型文として保存
+          </div>
+        </div>
+      )}
+
+      {/* 定型文登録モーダル */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-[0.5px] no-drag-area">
+          <form 
+            onSubmit={handleSaveFromModal} 
+            className="w-[210px] bg-[#fdfbf7] border border-[#dfcca6] p-3 rounded shadow-md space-y-2 text-xs text-[#4a3e3d]"
+          >
+            <div className="font-bold text-[#8b7668] border-b border-[#e9e3d8] pb-1">定型文として保存</div>
+            
+            <div className="space-y-0.5">
+              <label className="text-[9px] text-[#a39485] font-semibold">見出し (タイトル)</label>
+              <input
+                type="text"
+                value={modalTitle}
+                onChange={(e) => setModalTitle(e.target.value)}
+                className="w-full bg-white border border-[#e9e3d8] p-1 rounded text-xs outline-none"
+                required
+              />
+            </div>
+
+            <div className="space-y-0.5">
+              <label className="text-[9px] text-[#a39485] font-semibold">保存先カテゴリ</label>
+              <select
+                value={modalCategoryId}
+                onChange={(e) => setModalCategoryId(Number(e.target.value))}
+                className="w-full bg-white border border-[#e9e3d8] p-1 rounded text-xs outline-none cursor-pointer"
+                required
+              >
+                {categories.map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-0.5">
+              <label className="text-[9px] text-[#a39485] font-semibold">本文 (定型文の内容)</label>
+              <textarea
+                value={modalText}
+                onChange={(e) => setModalText(e.target.value)}
+                className="w-full bg-white border border-[#e9e3d8] p-1 rounded text-xs outline-none h-16 resize-none"
+                required
+              />
+            </div>
+
+            <div className="flex justify-end space-x-1.5 text-[10px] pt-1">
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="px-2 py-0.5 bg-[#ede6db] hover:bg-[#e2dcd0] text-[#6b5b52] rounded cursor-pointer"
+              >
+                キャンセル
+              </button>
+              <button
+                type="submit"
+                className="px-2.5 py-1 bg-[#8b7668] hover:bg-[#736255] text-white rounded font-semibold cursor-pointer"
+              >
+                保存
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   )
 }
