@@ -56,11 +56,6 @@ func (m *Monitor) Start(ctx context.Context) error {
 				if text != lastText {
 					lastText = text
 
-					// DBへ保存
-					_, err := m.db.SaveHistory(text)
-					if err != nil {
-						log.Printf("Failed to save clipboard history: %v", err)
-					}
 					if m.onCopy != nil {
 						m.onCopy(text)
 					}

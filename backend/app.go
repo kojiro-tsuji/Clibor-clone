@@ -193,7 +193,7 @@ func (a *App) IsAutoStartEnabled() bool {
 	return isAutoStartEnabled()
 }
 
-// handleNewCopy は新しいコピーが発生した時の FIFO 制御処理です。
+// handleNewCopy は新しいコピーが発生した時の履歴保存および FIFO 制御処理です。
 func (a *App) handleNewCopy(text string) {
 	// 自分がクリップボードに書き込んだテキストは監視対象から除外する
 	a.lastWrittenMu.Lock()
@@ -203,6 +203,14 @@ func (a *App) handleNewCopy(text string) {
 		return
 	}
 	a.lastWrittenMu.Unlock()
+
+	// 新規コピー履歴をDBへ保存
+	if a.db != nil {
+		_, err := a.db.SaveHistory(text)
+		if err != nil {
+			log.Printf("Failed to save clipboard history: %v", err)
+		}
+	}
 
 	a.fifoMu.Lock()
 	defer a.fifoMu.Unlock()
