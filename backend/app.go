@@ -123,8 +123,8 @@ func (a *App) PasteText(text string) {
 	// 2. ウィンドウを非表示にし、フォーカスを元のアプリに戻す
 	a.HideWindow()
 
-	// 3. フォーカス遷移を待つ (非常に短い待機)
-	time.Sleep(150 * time.Millisecond)
+	// 3. フォーカス遷移を待つ (220msに微増させて元のアプリのフォーカス復元を確実にする)
+	time.Sleep(220 * time.Millisecond)
 
 	// 4. OSに応じた Ctrl+V エミュレーションを実行
 	performOSKeyPress()

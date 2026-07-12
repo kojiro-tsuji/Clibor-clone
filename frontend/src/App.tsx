@@ -95,6 +95,15 @@ function App() {
     ClearFifoQueue().catch(err => console.error("Clear FIFO error:", err))
   }
 
+  const triggerPaste = (text: string) => {
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur()
+    }
+    setTimeout(() => {
+      PasteText(text)
+    }, 10)
+  }
+
   const handleContextMenu = (e: React.MouseEvent, text: string) => {
     e.preventDefault()
     setContextMenu({
@@ -237,10 +246,10 @@ function App() {
         } else if (e.key === 'ArrowUp' || e.key === 'k') {
           e.preventDefault()
           setSelectedIndex((prev) => (prev - 1 + listLength) % listLength)
-        } else if (e.ctrlKey && e.key.toLowerCase() === 'v') {
+        } else if (e.key === 'Enter') {
           e.preventDefault()
           if (filteredHistory[selectedIndex]) {
-            PasteText(filteredHistory[selectedIndex])
+            triggerPaste(filteredHistory[selectedIndex])
           }
         }
       } else if (activeTab === 'phrase') {
@@ -254,7 +263,7 @@ function App() {
           } else if (e.key === 'ArrowUp' || e.key === 'k') {
             e.preventDefault()
             setSelectedIndex((prev) => (prev - 1 + listLength) % listLength)
-          } else if (e.ctrlKey && e.key.toLowerCase() === 'v') {
+          } else if (e.key === 'Enter') {
             e.preventDefault()
             const targetCat = categories[selectedIndex]
             if (targetCat) {
@@ -278,7 +287,7 @@ function App() {
             // 左キーまたはEscでカテゴリ一覧に戻る
             setPhraseViewMode('categories')
             setSelectedIndex(0)
-          } else if (e.ctrlKey && e.key.toLowerCase() === 'v') {
+          } else if (e.key === 'Enter') {
             e.preventDefault()
             if (selectedIndex === 0) {
               // 0番目は「戻る」
@@ -287,7 +296,7 @@ function App() {
             } else {
               const phrase = filteredPhrases[selectedIndex - 1]
               if (phrase) {
-                PasteText(phrase.content)
+                triggerPaste(phrase.content)
               }
             }
           }
@@ -379,7 +388,7 @@ function App() {
               filteredHistory.map((item, index) => (
                 <div
                   key={index}
-                  onClick={() => PasteText(item)}
+                  onClick={() => triggerPaste(item)}
                   onContextMenu={(e) => handleContextMenu(e, item)}
                   style={{ WebkitAppRegion: 'no-drag' } as any}
                   className={`flex items-center justify-between py-1 px-1.5 cursor-pointer rounded no-drag-area ${
@@ -457,7 +466,7 @@ function App() {
                     return (
                       <div
                         key={phrase.id}
-                        onClick={() => PasteText(phrase.content)}
+                        onClick={() => triggerPaste(phrase.content)}
                         style={{ WebkitAppRegion: 'no-drag' } as any}
                         className={`group flex items-center justify-between py-1 px-1.5 cursor-pointer rounded no-drag-area ${
                           selectedIndex === itemIndex
