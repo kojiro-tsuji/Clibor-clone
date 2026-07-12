@@ -66,6 +66,27 @@ func (a *App) Startup(ctx context.Context) {
 	// 起動時に自動で Windows スタートアップに登録
 	_ = setAutoStart(true)
 
+	// 直近アクティブだった他アプリのウィンドウハンドル(HWND)を常時追跡するゴルーチン
+	go func(ctx context.Context) {
+		ticker := time.NewTicker(100 * time.Millisecond)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				hwnd, _, _ := getForegroundWindow.Call()
+				if hwnd == 0 {
+					continue
+				}
+				title := getWindowTemplateTitle(hwnd)
+				if title != "Clibor Clone" && title != "" {
+					a.lastActiveHWND = hwnd
+				}
+			}
+		}
+	}(ctx)
+
 	// Ctrl + V 監視用のゴルーチンを開始
 	go a.watchCtrlV(ctx)
 }
@@ -124,20 +145,16 @@ func (a *App) PasteText(text string) {
 	// 1. クリップボードへのセット (自己コピーによる重複検知を防ぐセーフライターを使用)
 	a.writeClipboardSafely(text)
 
-	// 2. 一旦ウィンドウを非表示にして元のアプリにフォーカスを自動で確実に戻す
-	a.HideWindow()
+	// 2. ウィンドウは隠さず、元のアプリ（保存したHWND）へフォーカスだけを確実に戻す
+	if a.lastActiveHWND != 0 {
+		_, _, _ = setForegroundWindow.Call(a.lastActiveHWND)
+	}
 
-	// 3. フォーカス遷移を待つ (元のアプリのフォーカス復元を確実にする)
-	time.Sleep(220 * time.Millisecond)
+	// 3. フォーカス遷移を十分に待つ (元のアプリのフォーカス復元を確実にするため300ms待機)
+	time.Sleep(300 * time.Millisecond)
 
 	// 4. OSに応じた Ctrl+V エミュレーションを実行
 	performOSKeyPress()
-
-	// 5. 貼り付け完了を一瞬待ってから、ウィンドウを再表示する
-	time.Sleep(80 * time.Millisecond)
-	wailsRuntime.WindowShow(a.ctx)
-	wailsRuntime.WindowUnminimise(a.ctx)
-	a.isVisible = true
 }
 
 // GetCategories はすべての定型文カテゴリを取得します。

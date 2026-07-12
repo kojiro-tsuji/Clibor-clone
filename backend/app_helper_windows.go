@@ -26,6 +26,7 @@ var (
 
 	getForegroundWindow = user32DLL.NewProc("GetForegroundWindow")
 	setForegroundWindow = user32DLL.NewProc("SetForegroundWindow")
+	getWindowText       = user32DLL.NewProc("GetWindowTextW")
 
 	kernel32DLL   = syscall.NewLazyDLL("kernel32.dll")
 	globalAlloc   = kernel32DLL.NewProc("GlobalAlloc")
@@ -221,4 +222,13 @@ func (a *App) handleCtrlVPressed() {
 	}
 
 	wailsRuntime.EventsEmit(a.ctx, "fifo-status-changed", a.isFifo, a.fifoQueue)
+}
+
+func getWindowTemplateTitle(hwnd uintptr) string {
+	buf := make([]uint16, 256)
+	r, _, _ := getWindowText.Call(hwnd, uintptr(unsafe.Pointer(&buf[0])), 256)
+	if r == 0 {
+		return ""
+	}
+	return syscall.UTF16ToString(buf[:r])
 }
