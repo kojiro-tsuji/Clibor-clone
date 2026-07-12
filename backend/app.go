@@ -124,16 +124,20 @@ func (a *App) PasteText(text string) {
 	// 1. クリップボードへのセット (自己コピーによる重複検知を防ぐセーフライターを使用)
 	a.writeClipboardSafely(text)
 
-	// 2. 画面は閉じずに、元のアプリ（保存したHWND）へフォーカスだけを戻す
-	if a.lastActiveHWND != 0 {
-		_, _, _ = setForegroundWindow.Call(a.lastActiveHWND)
-	}
+	// 2. 一旦ウィンドウを非表示にして元のアプリにフォーカスを自動で確実に戻す
+	a.HideWindow()
 
 	// 3. フォーカス遷移を待つ (元のアプリのフォーカス復元を確実にする)
 	time.Sleep(220 * time.Millisecond)
 
 	// 4. OSに応じた Ctrl+V エミュレーションを実行
 	performOSKeyPress()
+
+	// 5. 貼り付け完了を一瞬待ってから、ウィンドウを再表示する
+	time.Sleep(80 * time.Millisecond)
+	wailsRuntime.WindowShow(a.ctx)
+	wailsRuntime.WindowUnminimise(a.ctx)
+	a.isVisible = true
 }
 
 // GetCategories はすべての定型文カテゴリを取得します。
