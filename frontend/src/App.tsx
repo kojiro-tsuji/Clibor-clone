@@ -232,24 +232,24 @@ function App() {
   }, [activeTab, searchQuery])
 
   return (
-    <div className="flex flex-col h-screen bg-[#121214] text-zinc-200 select-none overflow-hidden font-sans">
+    <div className="flex flex-col h-screen bg-[#fdfbf7] text-[#4a3e3d] select-none overflow-hidden font-sans">
       
       {/* 枠なし移動用ドラッグヘッダー */}
       <header 
         style={{ WebkitAppRegion: 'drag' } as any}
-        className="flex items-center justify-between px-4 py-3 bg-zinc-950/40 border-b border-white/5 backdrop-blur-md shrink-0 cursor-move drag-area"
+        className="flex items-center justify-between px-4 py-2.5 bg-[#f4efe6] border-b border-[#e9e3d8] shrink-0 cursor-move drag-area"
       >
         <div className="flex items-center space-x-2">
-          <div className={`w-2 h-2 rounded-full bg-gradient-to-tr animate-pulse ${
-            isFifoMode ? 'from-green-400 to-indigo-500' : 'from-indigo-500 to-purple-600'
+          <div className={`w-2 h-2 rounded-full ${
+            isFifoMode ? 'bg-[#5e8b68]' : 'bg-[#b8a38f]'
           }`} />
-          <span className="text-[10px] font-bold tracking-wider text-zinc-400 font-mono">
-            CLIBOR CLONE {isFifoMode && <span className="text-green-400 font-bold ml-1">(FIFO)</span>}
+          <span className="text-[10px] font-bold tracking-wider text-[#8b7668] font-mono">
+            CLIBOR CLONE {isFifoMode && <span className="text-[#5e8b68] font-bold ml-1">(FIFO)</span>}
           </span>
         </div>
         <button
           onClick={() => Quit()}
-          className="p-1 rounded hover:bg-red-500/10 text-zinc-500 hover:text-red-400 transition-all duration-150 no-drag-area"
+          className="p-1 rounded hover:bg-red-500/5 text-[#a39485] hover:text-red-500 transition-all duration-75 no-drag-area"
           title="アプリ終了"
         >
           <Power size={13} />
@@ -259,13 +259,16 @@ function App() {
       {/* 検索バー */}
       <div className="p-3 shrink-0">
         <div className="relative">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#a39485]" />
           <input
             type="text"
-            placeholder={activeTab === 'history' ? "履歴を検索..." : "定型文を検索..."}
+            placeholder={activeTab === 'phrase' ? "定型文を検索..." : "履歴を検索..."}
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-8 pr-8 py-1.5 text-xs bg-zinc-900/60 border border-zinc-800 focus:border-indigo-500/50 rounded-lg outline-none transition-all duration-150 text-zinc-200 placeholder-zinc-500"
+            onChange={(e) => {
+              setSearchQuery(e.target.value)
+              setSelectedIndex(0)
+            }}
+            className="w-full pl-8 pr-4 py-1.5 bg-white border border-[#e9e3d8] focus:border-[#c8bdad] rounded-lg text-xs text-[#4a3e3d] placeholder-[#c8bdad]/80 outline-none transition-all duration-75"
           />
           {searchQuery && (
             <button 
@@ -286,18 +289,18 @@ function App() {
             {isFifoMode ? (
               <div className="space-y-2">
                 <div className="flex items-center justify-between px-1 py-0.5">
-                  <span className="text-[10px] font-bold text-green-400 tracking-wider">FIFO ペースト待機キュー ({fifoQueue.length})</span>
+                  <span className="text-[10px] font-bold text-[#5e8b68] tracking-wider">FIFO ペースト待機キュー ({fifoQueue.length})</span>
                   <button
                     onClick={handleClearFifo}
-                    className="text-[9px] px-2 py-0.5 rounded bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-colors"
+                    className="text-[9px] px-2 py-0.5 rounded bg-red-500/5 hover:bg-red-500/10 text-red-650 transition-colors"
                   >
                     解除 & クリア
                   </button>
                 </div>
                 {fifoQueue.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-16 text-zinc-500 space-y-2">
-                    <div className="text-xs text-indigo-400 font-medium animate-pulse">連続コピー待機中...</div>
-                    <span className="text-[10px] text-zinc-600 text-center max-w-[200px]">
+                  <div className="flex flex-col items-center justify-center py-16 text-[#a39485] space-y-2">
+                    <div className="text-xs text-[#8b7668] font-medium">連続コピー待機中...</div>
+                    <span className="text-[10px] text-[#a39485] text-center max-w-[200px]">
                       この状態でテキストをコピーすると、ここに順番に溜まります。
                     </span>
                   </div>
@@ -308,12 +311,12 @@ function App() {
                         key={index}
                         className={`flex items-start p-2 rounded-lg border text-xs ${
                           index === 0
-                            ? 'bg-green-500/5 border-green-500/30 text-green-200'
-                            : 'bg-zinc-900/20 border-zinc-850 text-zinc-400'
+                            ? 'bg-[#eef7ee] border-[#b4dbb4] text-[#3e603e]'
+                            : 'bg-[#faf8f5] border-[#f0eae1] text-[#6b5b52]'
                         }`}
                       >
                         <span className={`font-mono text-[9px] px-1 py-0.2 rounded mr-2 shrink-0 ${
-                          index === 0 ? 'bg-green-500/20 text-green-300 font-bold' : 'bg-zinc-800 text-zinc-550'
+                          index === 0 ? 'bg-[#d2edd2] text-[#3e603e] font-bold' : 'bg-[#ede6db] text-[#a39485]'
                         }`}>
                           {index === 0 ? 'NEXT' : index + 1}
                         </span>
@@ -326,7 +329,7 @@ function App() {
                 )}
               </div>
             ) : filteredHistory.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-zinc-500 space-y-2">
+              <div className="flex flex-col items-center justify-center py-16 text-[#a39485] space-y-2">
                 <Clipboard size={22} className="opacity-30" />
                 <span className="text-[11px]">コピー履歴がありません</span>
               </div>
@@ -335,17 +338,17 @@ function App() {
                 <div
                   key={index}
                   onClick={() => PasteText(item)}
-                  className={`group flex items-start justify-between p-2 rounded-lg border text-xs cursor-pointer transition-all duration-100 ${
+                  className={`group flex items-start justify-between p-2 rounded-lg border text-xs cursor-pointer transition-all duration-75 ${
                     selectedIndex === index
-                      ? 'bg-indigo-600/10 border-indigo-500/40 text-white'
-                      : 'bg-zinc-900/30 border-zinc-800/40 hover:bg-zinc-800/30 hover:border-zinc-850 text-zinc-300'
+                      ? 'bg-[#f5ebd6] border-[#dfcca6] text-[#4a3e3d] font-medium'
+                      : 'bg-[#faf8f5] border-[#f0eae1] hover:bg-[#f6f1e8] hover:border-[#dfcca6] text-[#6b5b52]'
                   }`}
                 >
-                  <div className="flex items-start space-x-2 min-w-0 flex-1">
-                    <span className={`font-mono text-[9px] px-1 py-0.2 rounded ${
-                      selectedIndex === index 
-                        ? 'bg-indigo-500/30 text-indigo-200 font-bold' 
-                        : 'bg-zinc-800 text-zinc-500 group-hover:text-zinc-400'
+                  <div className="flex items-start min-w-0 flex-1">
+                    <span className={`font-mono text-[9px] px-1 py-0.2 rounded mr-2 shrink-0 ${
+                      selectedIndex === index
+                        ? 'bg-[#dfcca6] text-[#8b7668]'
+                        : 'bg-[#ede6db] text-[#a39485]'
                     }`}>
                       {index + 1}
                     </span>
@@ -372,15 +375,15 @@ function App() {
         {activeTab === 'phrase' && (
           <div className="space-y-3">
             {/* カテゴリ選択 */}
-            <div className="flex items-center space-x-1 overflow-x-auto pb-1 max-w-full">
+            <div className="flex space-x-1.5 overflow-x-auto pb-1">
               {categories.map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => setSelectedCategoryId(cat.id)}
-                  className={`px-3 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-all duration-150 ${
+                  className={`px-3 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-all duration-75 ${
                     selectedCategoryId === cat.id
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-zinc-900/60 text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-300'
+                      ? 'bg-[#8b7668] text-white'
+                      : 'bg-[#f4efe6] hover:bg-[#ede6db] text-[#8b7668]'
                   }`}
                 >
                   {cat.name}
@@ -389,73 +392,65 @@ function App() {
             </div>
 
             {/* 定型文リスト */}
-            <div className="space-y-1">
+            <div className="space-y-1.5">
               {filteredPhrases.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-zinc-500 space-y-2">
-                  <FileText size={22} className="opacity-30" />
-                  <span className="text-[11px]">登録された定型文がありません</span>
+                <div className="flex flex-col items-center justify-center py-10 text-[#a39485] space-y-1.5">
+                  <span className="text-[10px]">定型文が登録されていません</span>
                 </div>
               ) : (
                 filteredPhrases.map((phrase) => (
                   <div
                     key={phrase.id}
                     onClick={() => PasteText(phrase.content)}
-                    className="group flex items-start justify-between p-2 rounded-lg bg-zinc-900/30 border border-zinc-800/40 hover:bg-zinc-800/30 hover:border-zinc-850 text-xs cursor-pointer transition-all duration-100 text-zinc-300"
+                    className="group flex items-start justify-between p-2 rounded-lg bg-[#faf8f5] border border-[#f0eae1] hover:bg-[#f6f1e8] hover:border-[#dfcca6] text-xs cursor-pointer transition-all duration-75 text-[#4a3e3d]"
                   >
                     <div className="min-w-0 flex-1">
-                      <div className="font-semibold text-zinc-200 group-hover:text-white truncate">
-                        {phrase.title}
-                      </div>
-                      <div className="text-zinc-500 group-hover:text-zinc-400 truncate text-[10px] mt-0.5">
-                        {phrase.content.replace(/\s+/g, ' ')}
-                      </div>
+                      <div className="font-semibold text-[#6b5b52] truncate">{phrase.title}</div>
+                      <div className="text-[10px] text-[#a39485] truncate mt-0.5">{phrase.content}</div>
                     </div>
                     <button
                       onClick={(e) => handleDeletePhrase(phrase.id, e)}
-                      className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-red-500/10 text-zinc-500 hover:text-red-400 transition-all duration-100 shrink-0"
-                      title="定型文を削除"
+                      className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-500/5 text-[#a39485] hover:text-red-500 transition-all duration-75"
+                      title="削除"
                     >
                       <Trash2 size={11} />
                     </button>
                   </div>
                 ))
               )}
-            </div>
 
-            {/* 新規定型文追加ボタン／フォーム */}
-            <div className="pt-2 border-t border-zinc-900">
+              {/* 新規追加ボタン / フォーム */}
               {!isAddingPhrase ? (
                 <button
                   onClick={() => setIsAddingPhrase(true)}
-                  className="w-full flex items-center justify-center space-x-1.5 py-1.5 bg-zinc-900/60 hover:bg-zinc-800/60 border border-dashed border-zinc-800 hover:border-zinc-700 rounded-lg text-xs text-indigo-400 hover:text-indigo-300 transition-all duration-150"
+                  className="w-full flex items-center justify-center space-x-1.5 py-1.5 bg-[#f4efe6] hover:bg-[#ede6db] border border-dashed border-[#e9e3d8] rounded-lg text-xs text-[#8b7668] hover:text-[#736255] transition-all duration-75"
                 >
                   <Plus size={13} />
-                  <span>新規定型文を追加</span>
+                  <span>定型文を追加</span>
                 </button>
               ) : (
-                <form onSubmit={handleAddPhrase} className="bg-zinc-900/40 border border-zinc-850 p-2.5 rounded-lg space-y-2">
-                  <div className="text-[10px] font-semibold text-zinc-400">定型文の新規作成</div>
+                <form onSubmit={handleAddPhrase} className="bg-[#f4efe6]/40 border border-[#e9e3d8] p-2.5 rounded-lg space-y-2">
+                  <div className="text-[10px] font-semibold text-[#8b7668]">定型文の新規作成</div>
                   <input
                     type="text"
                     placeholder="タイトル"
                     value={newTitle}
                     onChange={(e) => setNewTitle(e.target.value)}
+                    className="w-full bg-white border border-[#e9e3d8] focus:border-[#c8bdad] p-1.5 rounded text-xs text-[#4a3e3d] placeholder-[#c8bdad]/80 outline-none"
                     required
-                    className="w-full px-2.5 py-1 text-xs bg-zinc-950/60 border border-zinc-800 focus:border-indigo-500/50 rounded-md outline-none text-zinc-200 placeholder-zinc-600"
                   />
                   <textarea
                     placeholder="本文"
                     value={newContent}
                     onChange={(e) => setNewContent(e.target.value)}
+                    className="w-full bg-white border border-[#e9e3d8] focus:border-[#c8bdad] p-1.5 rounded text-xs text-[#4a3e3d] placeholder-[#c8bdad]/80 outline-none h-16 resize-none"
                     required
-                    rows={2}
-                    className="w-full px-2.5 py-1 text-xs bg-zinc-950/60 border border-zinc-800 focus:border-indigo-500/50 rounded-md outline-none text-zinc-200 placeholder-zinc-600 resize-none"
                   />
-                  <div className="flex items-center justify-end space-x-2 pt-1">
+                  <div className="flex justify-end space-x-1.5 text-[10px]">
                     <button
                       type="button"
                       onClick={() => setIsAddingPhrase(false)}
-                      className="px-2.5 py-1 rounded text-[9px] font-medium bg-zinc-800 hover:bg-zinc-750 text-zinc-400 transition-all duration-150"
+                      className="px-2.5 py-1 bg-[#ede6db] hover:bg-[#e2dcd0] text-[#6b5b52] rounded font-medium transition-colors"
                     >
                       キャンセル
                     </button>
@@ -476,19 +471,19 @@ function App() {
         {activeTab === 'settings' && (
           <div className="space-y-3 text-xs">
             {/* スタートアップ設定 */}
-            <div className="bg-zinc-900/30 border border-zinc-800/40 p-3 rounded-lg flex items-center justify-between">
+            <div className="bg-[#faf8f5] border border-[#f0eae1] p-3 rounded-lg flex items-center justify-between">
               <div>
-                <div className="font-semibold text-zinc-300">スタートアップに登録</div>
-                <div className="text-[10px] text-zinc-500 mt-0.5">PC起動時に自動で常駐を開始します</div>
+                <div className="font-semibold text-[#4a3e3d]">スタートアップに登録</div>
+                <div className="text-[10px] text-[#a39485] mt-0.5">PC起動時に自動で常駐を開始します</div>
               </div>
               <button
                 onClick={handleToggleAutoStart}
-                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-150 ease-in-out focus:outline-none ${
-                  isAutoStart ? 'bg-indigo-650' : 'bg-zinc-800'
+                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-75 focus:outline-none ${
+                  isAutoStart ? 'bg-[#8b7668]' : 'bg-[#e2dcd0]'
                 }`}
               >
                 <span
-                  className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-150 ease-in-out ${
+                  className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-75 ease-in-out ${
                     isAutoStart ? 'translate-x-4' : 'translate-x-0'
                   }`}
                 />
@@ -498,60 +493,59 @@ function App() {
             {/* FIFO設定 */}
             <div 
               style={{ WebkitAppRegion: 'no-drag' } as any}
-              className="bg-zinc-900/30 border border-zinc-800/40 p-3 rounded-lg flex items-center justify-between"
+              className="bg-[#faf8f5] border border-[#f0eae1] p-3 rounded-lg flex items-center justify-between"
             >
               <div>
-                <div className="font-semibold text-zinc-300">連続コピー (FIFO) モード</div>
-                <div className="text-[10px] text-zinc-500 mt-0.5">コピー順に Ctrl + V で貼り付けられます</div>
+                <div className="font-semibold text-[#4a3e3d]">連続コピー (FIFO) モード</div>
+                <div className="text-[10px] text-[#a39485] mt-0.5">コピー順に Ctrl + V で貼り付けられます</div>
               </div>
               <button
                 onClick={handleToggleFifo}
-                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-150 ease-in-out focus:outline-none ${
-                  isFifoMode ? 'bg-indigo-650' : 'bg-zinc-800'
+                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-75 focus:outline-none ${
+                  isFifoMode ? 'bg-[#8b7668]' : 'bg-[#e2dcd0]'
                 }`}
               >
                 <span
-                  className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-150 ease-in-out ${
+                  className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-75 ease-in-out ${
                     isFifoMode ? 'translate-x-4' : 'translate-x-0'
                   }`}
                 />
               </button>
             </div>
 
-            <div className="bg-zinc-900/30 border border-zinc-800/40 p-3 rounded-lg space-y-2">
-              <div className="font-semibold text-zinc-300">キーボード操作</div>
-              <div className="space-y-1 text-zinc-500">
+            <div className="bg-[#faf8f5] border border-[#f0eae1] p-3 rounded-lg space-y-2">
+              <div className="font-semibold text-[#4a3e3d]">キーボード操作</div>
+              <div className="space-y-1 text-[#a39485]">
                 <div className="flex justify-between">
                   <span>ウィンドウ表示</span>
-                  <span className="font-mono bg-zinc-800 px-1 py-0.2 rounded text-zinc-450">Ctrl 2回押し / Alt + C</span>
+                  <span className="font-mono bg-[#ede6db] px-1 py-0.2 rounded text-[#8b7668]">Ctrl 2回押し / Alt + C</span>
                 </div>
                 <div className="flex justify-between">
                   <span>連続コピー (FIFO) トグル</span>
-                  <span className="font-mono bg-zinc-800 px-1 py-0.2 rounded text-zinc-450">Ctrl + G</span>
+                  <span className="font-mono bg-[#ede6db] px-1 py-0.2 rounded text-[#8b7668]">Ctrl + G</span>
                 </div>
                 <div className="flex justify-between">
                   <span>移動 (履歴)</span>
-                  <span className="font-mono bg-zinc-800 px-1 py-0.2 rounded text-zinc-450">↑ / ↓ または J / K</span>
+                  <span className="font-mono bg-[#ede6db] px-1 py-0.2 rounded text-[#8b7668]">↑ / ↓ または J / K</span>
                 </div>
                 <div className="flex justify-between">
                   <span>貼り付け</span>
-                  <span className="font-mono bg-zinc-800 px-1 py-0.2 rounded text-zinc-450">Ctrl + V / Enter</span>
+                  <span className="font-mono bg-[#ede6db] px-1 py-0.2 rounded text-[#8b7668]">Ctrl + V / Enter</span>
                 </div>
               </div>
             </div>
 
-            <div className="bg-zinc-900/30 border border-zinc-800/40 p-3 rounded-lg space-y-1">
-              <div className="font-semibold text-zinc-300">アプリケーション情報</div>
-              <div className="text-zinc-500 space-y-0.5">
+            <div className="bg-[#faf8f5] border border-[#f0eae1] p-3 rounded-lg space-y-1">
+              <div className="font-semibold text-[#4a3e3d]">アプリケーション情報</div>
+              <div className="text-[#a39485] space-y-0.5">
                 <div>プロダクト: Clibor Clone (Wails MVP)</div>
-                <div>バージョン: 1.0.0</div>
-                <div>データベース: SQLite (modernc.org)</div>
+                <div>バージョン: 1.1.0</div>
               </div>
             </div>
 
             <button
               onClick={() => Quit()}
-              className="w-full flex items-center justify-center space-x-1.5 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/30 text-red-400 rounded-lg font-medium transition-all duration-150"
+              className="w-full flex items-center justify-center space-x-1.5 py-2 bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 text-red-650 rounded-lg font-medium transition-all duration-75"
             >
               <Power size={13} />
               <span>アプリケーションを終了する</span>
@@ -561,16 +555,16 @@ function App() {
       </main>
 
       {/* フッターナビゲーションバー */}
-      <footer className="flex border-t border-white/5 bg-zinc-950/40 backdrop-blur-md shrink-0">
+      <footer className="flex border-t border-[#e9e3d8] bg-[#f4efe6] shrink-0">
         <button
           onClick={() => setActiveTab('history')}
-          className={`flex-1 flex flex-col items-center justify-center py-2 text-[9px] font-medium transition-all duration-150 ${
+          className={`flex-1 flex flex-col items-center justify-center py-2 text-[9px] font-semibold transition-all duration-75 ${
             activeTab === 'history'
-              ? 'text-indigo-400 bg-white/5'
-              : 'text-zinc-500 hover:text-zinc-300'
+              ? 'bg-[#fdfbf7] text-[#8b7668] border-t-2 border-t-[#8b7668] border-x border-x-[#e9e3d8]'
+              : 'text-[#a39485] hover:text-[#8b7668]'
           }`}
         >
-          <Clipboard size={14} className="mb-1" />
+          <Clipboard size={14} className="mb-0.5" />
           <span>履歴</span>
         </button>
         <button
