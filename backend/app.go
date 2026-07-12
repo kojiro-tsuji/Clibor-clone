@@ -46,10 +46,10 @@ func (a *App) Startup(ctx context.Context) {
 	}
 	a.db = database
 
-	// クリップボード監視開始 (FIFOコピーハンドラを登録)
+	// クリップボード監視開始 (FIFOコピーハンドラを登録、Win32 APIのクリップボード読み取り関数を渡す)
 	a.monitor = clipboard.NewMonitor(a.db, func(text string) {
 		a.handleNewCopy(text)
-	})
+	}, clipboardReadText)
 	if err := a.monitor.Start(ctx); err != nil {
 		log.Printf("Failed to start clipboard monitor: %v", err)
 	}

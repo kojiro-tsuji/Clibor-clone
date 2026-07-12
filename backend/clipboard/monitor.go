@@ -4,8 +4,6 @@ import (
 	"context"
 	"log"
 	"time"
-
-	"golang.design/x/clipboard"
 )
 
 // DBInterface はDB操作に必要なインターフェースを定義します（循環参照を防ぐため）
@@ -15,51 +13,57 @@ type DBInterface interface {
 }
 
 type Monitor struct {
-	db     DBInterface
-	cancel context.CancelFunc
-	onCopy func(string)
+	db            DBInterface
+	cancel        context.CancelFunc
+	onCopy        func(string)
+	readClipboard func() (string, error)
 }
 
-func NewMonitor(database DBInterface, onCopy func(string)) *Monitor {
+func NewMonitor(database DBInterface, onCopy func(string), readClipboard func() (string, error)) *Monitor {
 	return &Monitor{
-		db:     database,
-		onCopy: onCopy,
+		db:            database,
+		onCopy:        onCopy,
+		readClipboard: readClipboard,
 	}
 }
 
 // Start はクリップボードの監視を開始します
 func (m *Monitor) Start(ctx context.Context) error {
-	// golang.design/x/clipboard の初期化
-	if err := clipboard.Init(); err != nil {
-		return err
-	}
-
 	watchCtx, cancel := context.WithCancel(ctx)
 	m.cancel = cancel
 
-	// 1. クリップボードの変更監視ゴルーチン
+	// 1. ポーリングによるクリップボード変更監視
 	go func() {
-		textChan := clipboard.Watch(watchCtx, clipboard.FmtText)
+		ticker := time.NewTicker(150 * time.Millisecond) // 150ms 周期で監視
+		defer ticker.Stop()
+
+		var lastText string
+		// 起動時の初期値をセットして、起動直後の重複保存を防ぐ
+		if initial, err := m.readClipboard(); err == nil {
+			lastText = initial
+		}
+
 		for {
 			select {
 			case <-watchCtx.Done():
 				return
-			case data, ok := <-textChan:
-				if !ok {
-					return
-				}
-				text := string(data)
-				if text == "" {
+			case <-ticker.C:
+				text, err := m.readClipboard()
+				if err != nil || text == "" {
 					continue
 				}
 
-				// DBへ保存
-				_, err := m.db.SaveHistory(text)
-				if err != nil {
-					log.Printf("Failed to save clipboard history: %v", err)
-				}
-				if m.onCopy != nil {
-					m.onCopy(text)
+				if text != lastText {
+					lastText = text
+
+					// DBへ保存
+					_, err := m.db.SaveHistory(text)
+					if err != nil {
+						log.Printf("Failed to save clipboard history: %v", err)
+					}
+					if m.onCopy != nil {
+						m.onCopy(text)
+					}
 				}
 			}
 		}

@@ -3,13 +3,17 @@
 package backend
 
 import (
+	"context"
+	"errors"
 	"log"
-
-	"golang.design/x/clipboard"
 )
 
 func clipboardWriteText(text string) {
-	clipboard.Write(clipboard.FmtText, []byte(text))
+	log.Println("Clipboard write is only supported on Windows in this MVP.")
+}
+
+func clipboardReadText() (string, error) {
+	return "", errors.New("Clipboard read is only supported on Windows in this MVP.")
 }
 
 func performOSKeyPress() {

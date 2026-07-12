@@ -7,8 +7,8 @@ import (
 	"os"
 	"syscall"
 	"time"
+	"unsafe"
 
-	"golang.design/x/clipboard"
 	"golang.org/x/sys/windows/registry"
 	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -17,16 +17,90 @@ var (
 	user32DLL        = syscall.NewLazyDLL("user32.dll")
 	keybdEventProc   = user32DLL.NewProc("keybd_event")
 	getAsyncKeyState = user32DLL.NewProc("GetAsyncKeyState")
+
+	openClipboard    = user32DLL.NewProc("OpenClipboard")
+	closeClipboard   = user32DLL.NewProc("CloseClipboard")
+	emptyClipboard   = user32DLL.NewProc("EmptyClipboard")
+	setClipboardData = user32DLL.NewProc("SetClipboardData")
+	getClipboardData = user32DLL.NewProc("GetClipboardData")
+
+	kernel32DLL   = syscall.NewLazyDLL("kernel32.dll")
+	globalAlloc   = kernel32DLL.NewProc("GlobalAlloc")
+	globalFree    = kernel32DLL.NewProc("GlobalFree")
+	globalLock    = kernel32DLL.NewProc("GlobalLock")
+	globalUnlock  = kernel32DLL.NewProc("GlobalUnlock")
+	rtlMoveMemory = kernel32DLL.NewProc("RtlMoveMemory")
 )
 
 const (
 	vkControl      = 0x11
 	vkV            = 0x56
 	keyeventfKeyUp = 0x0002
+	cfUnicodeText  = 13
+	gmemMoveable   = 0x0002
 )
 
 func clipboardWriteText(text string) {
-	clipboard.Write(clipboard.FmtText, []byte(text))
+	utf16, err := syscall.UTF16FromString(text)
+	if err != nil {
+		return
+	}
+
+	r, _, _ := openClipboard.Call(0)
+	if r == 0 {
+		return
+	}
+	defer closeClipboard.Call()
+
+	_, _, _ = emptyClipboard.Call()
+
+	size := uintptr(len(utf16) * 2)
+	hMem, _, _ := globalAlloc.Call(gmemMoveable, size)
+	if hMem == 0 {
+		return
+	}
+
+	pMem, _, _ := globalLock.Call(hMem)
+	if pMem == 0 {
+		_, _, _ = globalFree.Call(hMem)
+		return
+	}
+
+	_, _, _ = rtlMoveMemory.Call(pMem, uintptr(unsafe.Pointer(&utf16[0])), size)
+	_, _, _ = globalUnlock.Call(hMem)
+
+	r, _, _ = setClipboardData.Call(cfUnicodeText, hMem)
+	if r == 0 {
+		_, _, _ = globalFree.Call(hMem)
+	}
+}
+
+func clipboardReadText() (string, error) {
+	r, _, err := openClipboard.Call(0)
+	if r == 0 {
+		return "", err
+	}
+	defer closeClipboard.Call()
+
+	hMem, _, err := getClipboardData.Call(cfUnicodeText)
+	if hMem == 0 {
+		return "", err
+	}
+
+	pMem, _, err := globalLock.Call(hMem)
+	if pMem == 0 {
+		return "", err
+	}
+	defer globalUnlock.Call(hMem)
+
+	ptr := (*[1 << 29]uint16)(unsafe.Pointer(pMem))
+	length := 0
+	for ptr[length] != 0 {
+		length++
+	}
+
+	utf16Slice := ptr[:length:length]
+	return syscall.UTF16ToString(utf16Slice), nil
 }
 
 func performOSKeyPress() {
