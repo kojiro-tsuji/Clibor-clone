@@ -1,0 +1,27 @@
+# Wails build artifacts
+/build/bin/
+/build/windows/
+/build/darwin/
+/build/linux/
+
+# Go dependencies
+/vendor/
+/go.work
+/go.work.sum
+
+# Frontend dependencies and builds
+/frontend/node_modules/
+/frontend/dist/
+/frontend/src/wailsjs/
+
+# IDE settings
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.log
+clibor-clone.exe
+wails_run.log

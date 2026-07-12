@@ -1,0 +1,54 @@
+name: Wails Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*' # v1.0.0 などのタグがプッシュされたときに実行
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Release
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+      # フロントエンド依存関係の解決
+      # Wailsの構成に合わせて working-directory を調整してください
+      - name: Install Frontend Dependencies
+        run: |
+          cd frontend
+          npm install
+
+      - name: Build Wails App
+        run: wails build -platform windows/amd64 -clean
+
+      # ビルド成果物をZIP圧縮 (Windowsでの配布を考慮)
+      - name: Package Release
+        shell: pwsh
+        run: |
+          Compress-Archive -Path build\bin\* -DestinationPath clibor-wails-windows-amd64.zip
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: clibor-wails-windows-amd64.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
