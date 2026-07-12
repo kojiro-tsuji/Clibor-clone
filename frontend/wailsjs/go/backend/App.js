@@ -6,12 +6,20 @@ export function AddPhrase(arg1, arg2, arg3) {
   return window['go']['backend']['App']['AddPhrase'](arg1, arg2, arg3);
 }
 
+export function ClearFifoQueue() {
+  return window['go']['backend']['App']['ClearFifoQueue']();
+}
+
 export function DeletePhrase(arg1) {
   return window['go']['backend']['App']['DeletePhrase'](arg1);
 }
 
 export function GetCategories() {
   return window['go']['backend']['App']['GetCategories']();
+}
+
+export function GetFifoQueue() {
+  return window['go']['backend']['App']['GetFifoQueue']();
 }
 
 export function GetHistory(arg1) {
@@ -30,12 +38,20 @@ export function IsAutoStartEnabled() {
   return window['go']['backend']['App']['IsAutoStartEnabled']();
 }
 
+export function IsFifoMode() {
+  return window['go']['backend']['App']['IsFifoMode']();
+}
+
 export function PasteText(arg1) {
   return window['go']['backend']['App']['PasteText'](arg1);
 }
 
 export function SetAutoStart(arg1) {
   return window['go']['backend']['App']['SetAutoStart'](arg1);
+}
+
+export function ToggleFifoMode() {
+  return window['go']['backend']['App']['ToggleFifoMode']();
 }
 
 export function ToggleWindow() {

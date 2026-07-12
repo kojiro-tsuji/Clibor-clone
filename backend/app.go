@@ -3,6 +3,7 @@ package backend
 import (
 	"context"
 	"log"
+	"sync"
 	"time"
 
 	"wails-clibor/backend/clipboard"
@@ -18,6 +19,10 @@ type App struct {
 	monitor   *clipboard.Monitor
 	hkMgr     *hotkey.Manager
 	isVisible bool
+
+	fifoMu    sync.Mutex
+	isFifo    bool
+	fifoQueue []string
 }
 
 func NewApp() *App {
@@ -35,17 +40,24 @@ func (a *App) Startup(ctx context.Context) {
 	}
 	a.db = database
 
-	// クリップボード監視開始
-	a.monitor = clipboard.NewMonitor(a.db)
+	// クリップボード監視開始 (FIFOコピーハンドラを登録)
+	a.monitor = clipboard.NewMonitor(a.db, func(text string) {
+		a.handleNewCopy(text)
+	})
 	if err := a.monitor.Start(ctx); err != nil {
 		log.Printf("Failed to start clipboard monitor: %v", err)
 	}
 
-	// ホットキー監視開始 (Ctrl 2回押し、または Alt + C でウィンドウ表示切り替え)
+	// ホットキー監視開始 (Ctrl 2回押し、または Alt + C でウィンドウ表示切り替え。Ctrl + G で FIFOトグル)
 	a.hkMgr = hotkey.NewManager(func() {
 		a.ToggleWindow()
+	}, func() {
+		a.ToggleFifoMode()
 	})
 	a.hkMgr.Start(ctx)
+
+	// Ctrl + V 監視用のゴルーチンを開始
+	go a.watchCtrlV(ctx)
 }
 
 // Shutdown はアプリケーション終了時に呼び出されます。
@@ -173,4 +185,66 @@ func (a *App) SetAutoStart(enable bool) bool {
 // IsAutoStartEnabled は自動起動が有効になっているか取得します。
 func (a *App) IsAutoStartEnabled() bool {
 	return isAutoStartEnabled()
+}
+
+// handleNewCopy は新しいコピーが発生した時の FIFO 制御処理です。
+func (a *App) handleNewCopy(text string) {
+	a.fifoMu.Lock()
+	defer a.fifoMu.Unlock()
+
+	if !a.isFifo {
+		return
+	}
+
+	// 直近と同一テキストなら追加しない
+	if len(a.fifoQueue) > 0 && a.fifoQueue[len(a.fifoQueue)-1] == text {
+		return
+	}
+
+	a.fifoQueue = append(a.fifoQueue, text)
+
+	// 最初に追加されたテキストがあれば、それを即時クリップボードにセットして最初のペースト対象にする
+	if len(a.fifoQueue) == 1 {
+		clipboardWriteText(text)
+	}
+
+	wailsRuntime.EventsEmit(a.ctx, "fifo-status-changed", a.isFifo, a.fifoQueue)
+}
+
+// ToggleFifoMode は FIFO モードを切り替えます。
+func (a *App) ToggleFifoMode() bool {
+	a.fifoMu.Lock()
+	defer a.fifoMu.Unlock()
+
+	a.isFifo = !a.isFifo
+	if !a.isFifo {
+		a.fifoQueue = nil // モード終了時はキューをクリア
+	}
+
+	wailsRuntime.EventsEmit(a.ctx, "fifo-status-changed", a.isFifo, a.fifoQueue)
+	return a.isFifo
+}
+
+// IsFifoMode は現在の FIFO モード状態を取得します。
+func (a *App) IsFifoMode() bool {
+	a.fifoMu.Lock()
+	defer a.fifoMu.Unlock()
+	return a.isFifo
+}
+
+// GetFifoQueue は現在の FIFO キューを取得します。
+func (a *App) GetFifoQueue() []string {
+	a.fifoMu.Lock()
+	defer a.fifoMu.Unlock()
+	return a.fifoQueue
+}
+
+// ClearFifoQueue は FIFO キューをクリアし、FIFOモードを解除します。
+func (a *App) ClearFifoQueue() {
+	a.fifoMu.Lock()
+	defer a.fifoMu.Unlock()
+
+	a.isFifo = false
+	a.fifoQueue = nil
+	wailsRuntime.EventsEmit(a.ctx, "fifo-status-changed", a.isFifo, a.fifoQueue)
 }

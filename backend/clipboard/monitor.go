@@ -17,11 +17,13 @@ type DBInterface interface {
 type Monitor struct {
 	db     DBInterface
 	cancel context.CancelFunc
+	onCopy func(string)
 }
 
-func NewMonitor(database DBInterface) *Monitor {
+func NewMonitor(database DBInterface, onCopy func(string)) *Monitor {
 	return &Monitor{
-		db: database,
+		db:     database,
+		onCopy: onCopy,
 	}
 }
 
@@ -55,6 +57,9 @@ func (m *Monitor) Start(ctx context.Context) error {
 				_, err := m.db.SaveHistory(text)
 				if err != nil {
 					log.Printf("Failed to save clipboard history: %v", err)
+				}
+				if m.onCopy != nil {
+					m.onCopy(text)
 				}
 			}
 		}

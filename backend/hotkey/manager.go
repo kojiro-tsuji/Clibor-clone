@@ -9,14 +9,16 @@ import (
 )
 
 type Manager struct {
-	onTrigger func() // ホットキー検知時に実行するコールバック
-	mu        sync.Mutex
-	cancel    context.CancelFunc
+	onTrigger     func() // ホットキー検知時に実行するコールバック
+	onFifoTrigger func() // FIFOモード検知時に実行するコールバック
+	mu            sync.Mutex
+	cancel        context.CancelFunc
 }
 
-func NewManager(onTrigger func()) *Manager {
+func NewManager(onTrigger func(), onFifoTrigger func()) *Manager {
 	return &Manager{
-		onTrigger: onTrigger,
+		onTrigger:     onTrigger,
+		onFifoTrigger: onFifoTrigger,
 	}
 }
 
@@ -36,7 +38,15 @@ func (m *Manager) Start(ctx context.Context) {
 		}
 	}()
 
-	// 2. プラットフォームごとのCtrl2回押し監視
+	// 2. golang.design/x/hotkey による FIFOホットキー (Ctrl + G) の登録
+	go func() {
+		err := m.registerFifoHotkey(watchCtx)
+		if err != nil {
+			log.Printf("Failed to register FIFO hotkey: %v", err)
+		}
+	}()
+
+	// 3. プラットフォームごとのCtrl2回押し監視
 	go m.watchDoubleCtrl(watchCtx)
 }
 
@@ -63,6 +73,24 @@ func (m *Manager) registerStandardHotkey(ctx context.Context) error {
 			return nil
 		case <-hk.Keydown():
 			m.onTrigger()
+		}
+	}
+}
+
+// registerFifoHotkey は Ctrl + G による FIFOモード切り替えホットキーを登録します
+func (m *Manager) registerFifoHotkey(ctx context.Context) error {
+	hk := hotkey.New([]hotkey.Modifier{hotkey.ModCtrl}, hotkey.KeyG)
+	if err := hk.Register(); err != nil {
+		return err
+	}
+	defer hk.Unregister()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-hk.Keydown():
+			m.onFifoTrigger()
 		}
 	}
 }

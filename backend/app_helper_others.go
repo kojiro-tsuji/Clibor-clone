@@ -23,3 +23,7 @@ func setAutoStart(enable bool) error {
 func isAutoStartEnabled() bool {
 	return false
 }
+
+func (a *App) watchCtrlV(ctx context.Context) {
+	<-ctx.Done()
+}

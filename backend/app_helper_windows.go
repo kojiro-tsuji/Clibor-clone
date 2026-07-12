@@ -3,16 +3,20 @@
 package backend
 
 import (
+	"context"
 	"os"
 	"syscall"
+	"time"
 
 	"golang.design/x/clipboard"
 	"golang.org/x/sys/windows/registry"
+	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 var (
-	user32DLL      = syscall.NewLazyDLL("user32.dll")
-	keybdEventProc = user32DLL.NewProc("keybd_event")
+	user32DLL        = syscall.NewLazyDLL("user32.dll")
+	keybdEventProc   = user32DLL.NewProc("keybd_event")
+	getAsyncKeyState = user32DLL.NewProc("GetAsyncKeyState")
 )
 
 const (
@@ -66,4 +70,74 @@ func isAutoStartEnabled() bool {
 
 	_, _, err = k.GetStringValue("CliborWails")
 	return err == nil
+}
+
+func (a *App) watchCtrlV(ctx context.Context) {
+	const (
+		vkControl = 0x11
+		vkV       = 0x56
+	)
+	ticker := time.NewTicker(30 * time.Millisecond)
+	defer ticker.Stop()
+
+	var vPressed = false
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			a.fifoMu.Lock()
+			isFifo := a.isFifo
+			queueLen := len(a.fifoQueue)
+			a.fifoMu.Unlock()
+
+			if !isFifo || queueLen == 0 {
+				time.Sleep(200 * time.Millisecond) // モード無効時はポーリングを遅くして負荷を下げる
+				continue
+			}
+
+			// GetAsyncKeyState で Ctrl と V の状態を取得
+			retCtrl, _, _ := getAsyncKeyState.Call(uintptr(vkControl))
+			retV, _, _ := getAsyncKeyState.Call(uintptr(vkV))
+			ctrlDown := (retCtrl & 0x8000) != 0
+			vDown := (retV & 0x8000) != 0
+
+			if ctrlDown && vDown {
+				if !vPressed {
+					vPressed = true
+					// 別ゴルーチンで非同期にポップアップ処理（デッドロック防止）
+					go a.handleCtrlVPressed()
+				}
+			} else {
+				vPressed = false
+			}
+		}
+	}
+}
+
+func (a *App) handleCtrlVPressed() {
+	// OSが現在のクリップボードテキストを貼り付けるのを少し待つ（タイミング調整）
+	time.Sleep(120 * time.Millisecond)
+
+	a.fifoMu.Lock()
+	defer a.fifoMu.Unlock()
+
+	if !a.isFifo || len(a.fifoQueue) == 0 {
+		return
+	}
+
+	// 最初の要素（貼り付けられたもの）を削除
+	a.fifoQueue = a.fifoQueue[1:]
+
+	if len(a.fifoQueue) > 0 {
+		// 次の要素をクリップボードにセットして、次のCtrl+Vに備える
+		nextText := a.fifoQueue[0]
+		clipboardWriteText(nextText)
+	} else {
+		// すべて貼り付け終わったら自動的に通常モードに戻る
+		a.isFifo = false
+	}
+
+	wailsRuntime.EventsEmit(a.ctx, "fifo-status-changed", a.isFifo, a.fifoQueue)
 }

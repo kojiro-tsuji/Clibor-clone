@@ -18,9 +18,13 @@ import {
   AddPhrase,
   DeletePhrase,
   SetAutoStart,
-  IsAutoStartEnabled
+  IsAutoStartEnabled,
+  ToggleFifoMode,
+  IsFifoMode,
+  GetFifoQueue,
+  ClearFifoQueue
 } from '../wailsjs/go/backend/App'
-import { Quit } from '../wailsjs/runtime/runtime'
+import { Quit, EventsOn, EventsOff } from '../wailsjs/runtime/runtime'
 
 interface Category {
   id: number
@@ -59,12 +63,46 @@ function App() {
   // スタートアップ設定用
   const [isAutoStart, setIsAutoStart] = useState(false)
 
+  // FIFO設定用
+  const [isFifoMode, setIsFifoMode] = useState(false)
+  const [fifoQueue, setFifoQueue] = useState<string[]>([])
+
   // 自動起動の初期状態を取得
   useEffect(() => {
     IsAutoStartEnabled().then((enabled) => {
       setIsAutoStart(enabled)
     }).catch(err => console.error("Fetch autostart status error:", err))
   }, [])
+
+  // FIFO初期状態取得とイベント監視
+  useEffect(() => {
+    IsFifoMode().then((mode) => {
+      setIsFifoMode(mode)
+    }).catch(err => console.error("Fetch FIFO mode error:", err))
+
+    GetFifoQueue().then((q) => {
+      if (q) setFifoQueue(q)
+    }).catch(err => console.error("Fetch FIFO queue error:", err))
+
+    EventsOn("fifo-status-changed", (isFifo: boolean, queue: string[]) => {
+      setIsFifoMode(isFifo)
+      setFifoQueue(queue || [])
+    })
+
+    return () => {
+      EventsOff("fifo-status-changed")
+    }
+  }, [])
+
+  const handleToggleFifo = () => {
+    ToggleFifoMode().then((mode) => {
+      setIsFifoMode(mode)
+    }).catch(err => console.error("Toggle FIFO error:", err))
+  }
+
+  const handleClearFifo = () => {
+    ClearFifoQueue().catch(err => console.error("Clear FIFO error:", err))
+  }
 
   const handleToggleAutoStart = () => {
     const newValue = !isAutoStart
@@ -198,11 +236,16 @@ function App() {
       
       {/* 枠なし移動用ドラッグヘッダー */}
       <header 
+        style={{ WebkitAppRegion: 'drag' } as any}
         className="flex items-center justify-between px-4 py-3 bg-zinc-950/40 border-b border-white/5 backdrop-blur-md shrink-0 cursor-move drag-area"
       >
         <div className="flex items-center space-x-2">
-          <div className="w-2 h-2 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 animate-pulse" />
-          <span className="text-[10px] font-bold tracking-wider text-zinc-400 font-mono">CLIBOR CLONE</span>
+          <div className={`w-2 h-2 rounded-full bg-gradient-to-tr animate-pulse ${
+            isFifoMode ? 'from-green-400 to-indigo-500' : 'from-indigo-500 to-purple-600'
+          }`} />
+          <span className="text-[10px] font-bold tracking-wider text-zinc-400 font-mono">
+            CLIBOR CLONE {isFifoMode && <span className="text-green-400 font-bold ml-1">(FIFO)</span>}
+          </span>
         </div>
         <button
           onClick={() => Quit()}
@@ -240,7 +283,49 @@ function App() {
         {/* --- 履歴タブ --- */}
         {activeTab === 'history' && (
           <div className="space-y-1">
-            {filteredHistory.length === 0 ? (
+            {isFifoMode ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between px-1 py-0.5">
+                  <span className="text-[10px] font-bold text-green-400 tracking-wider">FIFO ペースト待機キュー ({fifoQueue.length})</span>
+                  <button
+                    onClick={handleClearFifo}
+                    className="text-[9px] px-2 py-0.5 rounded bg-red-500/10 hover:bg-red-500/20 text-red-400 transition-colors"
+                  >
+                    解除 & クリア
+                  </button>
+                </div>
+                {fifoQueue.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-zinc-500 space-y-2">
+                    <div className="text-xs text-indigo-400 font-medium animate-pulse">連続コピー待機中...</div>
+                    <span className="text-[10px] text-zinc-600 text-center max-w-[200px]">
+                      この状態でテキストをコピーすると、ここに順番に溜まります。
+                    </span>
+                  </div>
+                ) : (
+                  <div className="space-y-1 max-h-[400px] overflow-y-auto pr-1">
+                    {fifoQueue.map((item, index) => (
+                      <div
+                        key={index}
+                        className={`flex items-start p-2 rounded-lg border text-xs ${
+                          index === 0
+                            ? 'bg-green-500/5 border-green-500/30 text-green-200'
+                            : 'bg-zinc-900/20 border-zinc-850 text-zinc-400'
+                        }`}
+                      >
+                        <span className={`font-mono text-[9px] px-1 py-0.2 rounded mr-2 shrink-0 ${
+                          index === 0 ? 'bg-green-500/20 text-green-300 font-bold' : 'bg-zinc-800 text-zinc-550'
+                        }`}>
+                          {index === 0 ? 'NEXT' : index + 1}
+                        </span>
+                        <span className="truncate break-all pr-2 leading-relaxed">
+                          {item.replace(/\s+/g, ' ')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : filteredHistory.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-zinc-500 space-y-2">
                 <Clipboard size={22} className="opacity-30" />
                 <span className="text-[11px]">コピー履歴がありません</span>
@@ -410,12 +495,39 @@ function App() {
               </button>
             </div>
 
+            {/* FIFO設定 */}
+            <div 
+              style={{ WebkitAppRegion: 'no-drag' } as any}
+              className="bg-zinc-900/30 border border-zinc-800/40 p-3 rounded-lg flex items-center justify-between"
+            >
+              <div>
+                <div className="font-semibold text-zinc-300">連続コピー (FIFO) モード</div>
+                <div className="text-[10px] text-zinc-500 mt-0.5">コピー順に Ctrl + V で貼り付けられます</div>
+              </div>
+              <button
+                onClick={handleToggleFifo}
+                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-150 ease-in-out focus:outline-none ${
+                  isFifoMode ? 'bg-indigo-650' : 'bg-zinc-800'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-150 ease-in-out ${
+                    isFifoMode ? 'translate-x-4' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+
             <div className="bg-zinc-900/30 border border-zinc-800/40 p-3 rounded-lg space-y-2">
               <div className="font-semibold text-zinc-300">キーボード操作</div>
               <div className="space-y-1 text-zinc-500">
                 <div className="flex justify-between">
                   <span>ウィンドウ表示</span>
                   <span className="font-mono bg-zinc-800 px-1 py-0.2 rounded text-zinc-450">Ctrl 2回押し / Alt + C</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>連続コピー (FIFO) トグル</span>
+                  <span className="font-mono bg-zinc-800 px-1 py-0.2 rounded text-zinc-450">Ctrl + G</span>
                 </div>
                 <div className="flex justify-between">
                   <span>移動 (履歴)</span>

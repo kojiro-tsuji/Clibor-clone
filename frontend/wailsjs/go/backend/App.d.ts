@@ -4,9 +4,13 @@ import {db} from '../models';
 
 export function AddPhrase(arg1:number,arg2:string,arg3:string):Promise<boolean>;
 
+export function ClearFifoQueue():Promise<void>;
+
 export function DeletePhrase(arg1:number):Promise<boolean>;
 
 export function GetCategories():Promise<Array<db.Category>>;
+
+export function GetFifoQueue():Promise<Array<string>>;
 
 export function GetHistory(arg1:number):Promise<Array<string>>;
 
@@ -16,8 +20,12 @@ export function HideWindow():Promise<void>;
 
 export function IsAutoStartEnabled():Promise<boolean>;
 
+export function IsFifoMode():Promise<boolean>;
+
 export function PasteText(arg1:string):Promise<void>;
 
 export function SetAutoStart(arg1:boolean):Promise<boolean>;
+
+export function ToggleFifoMode():Promise<boolean>;
 
 export function ToggleWindow():Promise<void>;
