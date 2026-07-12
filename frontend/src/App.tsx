@@ -62,6 +62,9 @@ function App() {
     return () => window.removeEventListener('click', handleGlobalClick)
   }, [])
 
+  // 定型文ディレクトリの表示モード ('categories' でフォルダ一覧, 'phrases' でフォルダ内定型文一覧)
+  const [phraseViewMode, setPhraseViewMode] = useState<'categories' | 'phrases'>('categories')
+
   // FIFO設定用
   const [isFifoMode, setIsFifoMode] = useState(false)
   const [fifoQueue, setFifoQueue] = useState<string[]>([])
@@ -210,9 +213,16 @@ function App() {
 
 
 
-  // キーボード操作のリスナー
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // 検索入力欄にフォーカスがある時はキーボード操作を行わない
+      if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') {
+        if (e.key === 'Escape') {
+          (document.activeElement as HTMLElement).blur()
+        }
+        return
+      }
+
       if (activeTab === 'history') {
         const listLength = filteredHistory.length
         if (listLength === 0) return
@@ -229,15 +239,65 @@ function App() {
             PasteText(filteredHistory[selectedIndex])
           }
         }
+      } else if (activeTab === 'phrase') {
+        if (phraseViewMode === 'categories') {
+          const listLength = categories.length
+          if (listLength === 0) return
+
+          if (e.key === 'ArrowDown' || e.key === 'j') {
+            e.preventDefault()
+            setSelectedIndex((prev) => (prev + 1) % listLength)
+          } else if (e.key === 'ArrowUp' || e.key === 'k') {
+            e.preventDefault()
+            setSelectedIndex((prev) => (prev - 1 + listLength) % listLength)
+          } else if (e.ctrlKey && e.key.toLowerCase() === 'v') {
+            e.preventDefault()
+            const targetCat = categories[selectedIndex]
+            if (targetCat) {
+              setSelectedCategoryId(targetCat.id)
+              setPhraseViewMode('phrases')
+              setSelectedIndex(0)
+            }
+          }
+        } else if (phraseViewMode === 'phrases') {
+          // 「戻る」行を含めるため、リストの長さは filteredPhrases.length + 1
+          const listLength = filteredPhrases.length + 1
+
+          if (e.key === 'ArrowDown' || e.key === 'j') {
+            e.preventDefault()
+            setSelectedIndex((prev) => (prev + 1) % listLength)
+          } else if (e.key === 'ArrowUp' || e.key === 'k') {
+            e.preventDefault()
+            setSelectedIndex((prev) => (prev - 1 + listLength) % listLength)
+          } else if (e.key === 'ArrowLeft' || e.key === 'h' || e.key === 'Escape') {
+            e.preventDefault()
+            // 左キーまたはEscでカテゴリ一覧に戻る
+            setPhraseViewMode('categories')
+            setSelectedIndex(0)
+          } else if (e.ctrlKey && e.key.toLowerCase() === 'v') {
+            e.preventDefault()
+            if (selectedIndex === 0) {
+              // 0番目は「戻る」
+              setPhraseViewMode('categories')
+              setSelectedIndex(0)
+            } else {
+              const phrase = filteredPhrases[selectedIndex - 1]
+              if (phrase) {
+                PasteText(phrase.content)
+              }
+            }
+          }
+        }
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [activeTab, filteredHistory, selectedIndex])
+  }, [activeTab, filteredHistory, categories, phraseViewMode, filteredPhrases, selectedIndex, selectedCategoryId])
 
   useEffect(() => {
     setSelectedIndex(0)
+    setPhraseViewMode('categories')
   }, [activeTab, searchQuery])
 
   return (
@@ -341,96 +401,131 @@ function App() {
         {/* --- 定型文タブ --- */}
         {activeTab === 'phrase' && (
           <div className="space-y-2">
-            {/* カテゴリ選択 */}
-            <div className="flex space-x-2 overflow-x-auto pb-1 border-b border-[#e9e3d8]">
-              {categories.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setSelectedCategoryId(cat.id)}
+            {phraseViewMode === 'categories' ? (
+              /* --- ディレクトリ（フォルダ）一覧モード --- */
+              <div className="space-y-0.5">
+                {categories.map((cat, index) => (
+                  <div
+                    key={cat.id}
+                    onClick={() => {
+                      setSelectedCategoryId(cat.id)
+                      setPhraseViewMode('phrases')
+                      setSelectedIndex(0)
+                    }}
+                    style={{ WebkitAppRegion: 'no-drag' } as any}
+                    className={`flex items-center py-1.5 px-2.5 cursor-pointer rounded no-drag-area ${
+                      selectedIndex === index
+                        ? 'bg-[#f5ebd6] text-[#4a3e3d] font-semibold'
+                        : 'hover:bg-[#f6f1e8] text-[#6b5b52]'
+                    }`}
+                  >
+                    <span className="font-mono text-[9px] text-[#a39485] mr-2 shrink-0">📁</span>
+                    <span className="truncate leading-normal">{cat.name}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              /* --- フォルダ内定型文一覧モード --- */
+              <div className="space-y-0.5">
+                {/* 戻る行 */}
+                <div
+                  onClick={() => {
+                    setPhraseViewMode('categories')
+                    setSelectedIndex(0)
+                  }}
                   style={{ WebkitAppRegion: 'no-drag' } as any}
-                  className={`text-xs font-semibold whitespace-nowrap no-drag-area ${
-                    selectedCategoryId === cat.id
-                      ? 'text-[#8b7668] underline font-bold'
-                      : 'text-[#a39485] hover:text-[#8b7668]'
+                  className={`flex items-center py-1.5 px-2.5 cursor-pointer rounded no-drag-area ${
+                    selectedIndex === 0
+                      ? 'bg-[#f5ebd6] text-[#4a3e3d] font-semibold'
+                      : 'text-[#8b7668] hover:bg-[#f6f1e8]'
                   }`}
                 >
-                  {cat.name}
-                </button>
-              ))}
-            </div>
+                  <span className="font-mono text-[9px] mr-2 shrink-0">⬅</span>
+                  <span className="font-semibold leading-normal">.. (戻る)</span>
+                </div>
 
-            {/* 定型文リスト */}
-            <div className="space-y-0.5">
-              {filteredPhrases.length === 0 ? (
-                <div className="text-center py-10 text-[#a39485]">定型文がありません</div>
-              ) : (
-                filteredPhrases.map((phrase) => (
-                  <div
-                    key={phrase.id}
-                    onClick={() => PasteText(phrase.content)}
+                {/* 定型文リスト */}
+                {filteredPhrases.length === 0 ? (
+                  <div className="text-center py-10 text-[#a39485]">定型文がありません</div>
+                ) : (
+                  filteredPhrases.map((phrase, index) => {
+                    const itemIndex = index + 1
+                    return (
+                      <div
+                        key={phrase.id}
+                        onClick={() => PasteText(phrase.content)}
+                        style={{ WebkitAppRegion: 'no-drag' } as any}
+                        className={`group flex items-center justify-between py-1 px-1.5 cursor-pointer rounded no-drag-area ${
+                          selectedIndex === itemIndex
+                            ? 'bg-[#f5ebd6] text-[#4a3e3d] font-semibold'
+                            : 'hover:bg-[#f6f1e8] text-[#6b5b52]'
+                        }`}
+                      >
+                        <div className="min-w-0 flex-1 mr-2">
+                          <span className="font-semibold text-[#6b5b52]">{phrase.title}</span>
+                          <span className="text-[10px] text-[#a39485] ml-2 truncate">{phrase.content}</span>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeletePhrase(phrase.id, e)
+                          }}
+                          style={{ WebkitAppRegion: 'no-drag' } as any}
+                          className="opacity-0 group-hover:opacity-100 text-[10px] text-red-500 hover:underline no-drag-area"
+                          title="削除"
+                        >
+                          [✕]
+                        </button>
+                      </div>
+                    )
+                  })
+                )}
+
+                {/* 新規追加ボタン / フォーム */}
+                {!isAddingPhrase ? (
+                  <button
+                    onClick={() => setIsAddingPhrase(true)}
                     style={{ WebkitAppRegion: 'no-drag' } as any}
-                    className="group flex items-center justify-between py-1 px-1.5 hover:bg-[#f6f1e8] rounded cursor-pointer text-[#4a3e3d] no-drag-area"
+                    className="w-full py-1 mt-2 text-center text-[#8b7668] border border-dashed border-[#e9e3d8] hover:bg-[#ede6db] rounded no-drag-area"
                   >
-                    <div className="min-w-0 flex-1 mr-2">
-                      <span className="font-semibold text-[#6b5b52]">{phrase.title}</span>
-                      <span className="text-[10px] text-[#a39485] ml-2 truncate">{phrase.content}</span>
+                    + 定型文を追加
+                  </button>
+                ) : (
+                  <form onSubmit={handleAddPhrase} style={{ WebkitAppRegion: 'no-drag' } as any} className="bg-[#f4efe6]/40 border border-[#e9e3d8] p-2 rounded space-y-1.5 mt-2 no-drag-area">
+                    <input
+                      type="text"
+                      placeholder="タイトル"
+                      value={newTitle}
+                      onChange={(e) => setNewTitle(e.target.value)}
+                      className="w-full bg-white border border-[#e9e3d8] p-1 rounded text-xs text-[#4a3e3d] placeholder-[#c8bdad]/85 outline-none"
+                      required
+                    />
+                    <textarea
+                      placeholder="本文"
+                      value={newContent}
+                      onChange={(e) => setNewContent(e.target.value)}
+                      className="w-full bg-white border border-[#e9e3d8] p-1 rounded text-xs text-[#4a3e3d] placeholder-[#c8bdad]/85 outline-none h-12 resize-none"
+                      required
+                    />
+                    <div className="flex justify-end space-x-2 text-[10px]">
+                      <button
+                        type="button"
+                        onClick={() => setIsAddingPhrase(false)}
+                        className="px-2 py-0.5 bg-[#ede6db] hover:bg-[#e2dcd0] text-[#6b5b52] rounded"
+                      >
+                        キャンセル
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-2.5 py-1 rounded text-[9px] font-medium bg-[#8b7668] hover:bg-[#736255] text-white"
+                      >
+                        保存
+                      </button>
                     </div>
-                    <button
-                      onClick={(e) => handleDeletePhrase(phrase.id, e)}
-                      style={{ WebkitAppRegion: 'no-drag' } as any}
-                      className="opacity-0 group-hover:opacity-100 text-[10px] text-red-500 hover:underline no-drag-area"
-                      title="削除"
-                    >
-                      [✕]
-                    </button>
-                  </div>
-                ))
-              )}
-
-              {/* 新規追加ボタン / フォーム */}
-              {!isAddingPhrase ? (
-                <button
-                  onClick={() => setIsAddingPhrase(true)}
-                  style={{ WebkitAppRegion: 'no-drag' } as any}
-                  className="w-full py-1 mt-2 text-center text-[#8b7668] border border-dashed border-[#e9e3d8] hover:bg-[#ede6db] rounded no-drag-area"
-                >
-                  + 定型文を追加
-                </button>
-              ) : (
-                <form onSubmit={handleAddPhrase} style={{ WebkitAppRegion: 'no-drag' } as any} className="bg-[#f4efe6]/40 border border-[#e9e3d8] p-2 rounded space-y-1.5 mt-2 no-drag-area">
-                  <input
-                    type="text"
-                    placeholder="タイトル"
-                    value={newTitle}
-                    onChange={(e) => setNewTitle(e.target.value)}
-                    className="w-full bg-white border border-[#e9e3d8] p-1 rounded text-xs text-[#4a3e3d] placeholder-[#c8bdad]/85 outline-none"
-                    required
-                  />
-                  <textarea
-                    placeholder="本文"
-                    value={newContent}
-                    onChange={(e) => setNewContent(e.target.value)}
-                    className="w-full bg-white border border-[#e9e3d8] p-1 rounded text-xs text-[#4a3e3d] placeholder-[#c8bdad]/85 outline-none h-12 resize-none"
-                    required
-                  />
-                  <div className="flex justify-end space-x-2 text-[10px]">
-                    <button
-                      type="button"
-                      onClick={() => setIsAddingPhrase(false)}
-                      className="px-2 py-0.5 bg-[#ede6db] hover:bg-[#e2dcd0] text-[#6b5b52] rounded"
-                    >
-                      キャンセル
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-2.5 py-1 rounded text-[9px] font-medium bg-[#8b7668] hover:bg-[#736255] text-white"
-                    >
-                      保存
-                    </button>
-                  </div>
-                </form>
-              )}
-            </div>
+                  </form>
+                )}
+              </div>
+            )}
           </div>
         )}
 
