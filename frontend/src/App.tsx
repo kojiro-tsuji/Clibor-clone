@@ -553,8 +553,8 @@ function App() {
                   <span>↑ / ↓ または J / K</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>貼り付け</span>
-                  <span>Ctrl + V</span>
+                  <span>貼り付け (決定)</span>
+                  <span>Enter</span>
                 </div>
               </div>
             </div>
