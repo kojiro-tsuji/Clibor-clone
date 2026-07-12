@@ -215,9 +215,10 @@ func (a *App) handleNewCopy(text string) {
 
 	a.fifoQueue = append(a.fifoQueue, text)
 
-	// 最初に追加されたテキストがあれば、それを即時クリップボードにセットして最初のペースト対象にする
-	if len(a.fifoQueue) == 1 {
-		a.writeClipboardSafely(text)
+	// 重要：新しいコピーが追加されるたびに、クリップボードをキューの先頭（最初にペーストするデータ）に強制固定する
+	if len(a.fifoQueue) > 0 {
+		firstText := a.fifoQueue[0]
+		go a.writeClipboardSafely(firstText)
 	}
 
 	wailsRuntime.EventsEmit(a.ctx, "fifo-status-changed", a.isFifo, a.fifoQueue)
