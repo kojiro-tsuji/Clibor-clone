@@ -24,9 +24,10 @@ var (
 	setClipboardData = user32DLL.NewProc("SetClipboardData")
 	getClipboardData = user32DLL.NewProc("GetClipboardData")
 
-	getForegroundWindow = user32DLL.NewProc("GetForegroundWindow")
-	setForegroundWindow = user32DLL.NewProc("SetForegroundWindow")
-	getWindowText       = user32DLL.NewProc("GetWindowTextW")
+	getForegroundWindow      = user32DLL.NewProc("GetForegroundWindow")
+	setForegroundWindow      = user32DLL.NewProc("SetForegroundWindow")
+	getWindowText            = user32DLL.NewProc("GetWindowTextW")
+	getWindowThreadProcessId = user32DLL.NewProc("GetWindowThreadProcessId")
 
 	kernel32DLL   = syscall.NewLazyDLL("kernel32.dll")
 	globalAlloc   = kernel32DLL.NewProc("GlobalAlloc")
@@ -231,4 +232,10 @@ func getWindowTemplateTitle(hwnd uintptr) string {
 		return ""
 	}
 	return syscall.UTF16ToString(buf[:r])
+}
+
+func getWindowProcessID(hwnd uintptr) uint32 {
+	var pid uint32
+	_, _, _ = getWindowThreadProcessId.Call(hwnd, uintptr(unsafe.Pointer(&pid)))
+	return pid
 }

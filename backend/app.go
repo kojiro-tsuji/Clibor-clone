@@ -3,6 +3,7 @@ package backend
 import (
 	"context"
 	"log"
+	"os"
 	"sync"
 	"time"
 
@@ -67,6 +68,7 @@ func (a *App) Startup(ctx context.Context) {
 	_ = setAutoStart(true)
 
 	// 直近アクティブだった他アプリのウィンドウハンドル(HWND)を常時追跡するゴルーチン
+	myPID := uint32(os.Getpid())
 	go func(ctx context.Context) {
 		ticker := time.NewTicker(100 * time.Millisecond)
 		defer ticker.Stop()
@@ -79,8 +81,8 @@ func (a *App) Startup(ctx context.Context) {
 				if hwnd == 0 {
 					continue
 				}
-				title := getWindowTemplateTitle(hwnd)
-				if title != "Clibor Clone" && title != "" {
+				activePID := getWindowProcessID(hwnd)
+				if activePID != myPID {
 					a.lastActiveHWND = hwnd
 				}
 			}
@@ -145,16 +147,23 @@ func (a *App) PasteText(text string) {
 	// 1. クリップボードへのセット (自己コピーによる重複検知を防ぐセーフライターを使用)
 	a.writeClipboardSafely(text)
 
-	// 2. ウィンドウは隠さず、元のアプリ（保存したHWND）へフォーカスだけを確実に戻す
+	// 2. Wailsウィンドウの最前面(AlwaysOnTop)を一時的に解除 (OSによるフォーカスブロックを防ぐため)
+	wailsRuntime.WindowSetAlwaysOnTop(a.ctx, false)
+
+	// 3. 画面は隠さず、元のアプリ（保存したHWND）へフォーカスだけを確実に戻す
 	if a.lastActiveHWND != 0 {
 		_, _, _ = setForegroundWindow.Call(a.lastActiveHWND)
 	}
 
-	// 3. フォーカス遷移を十分に待つ (元のアプリのフォーカス復元を確実にするため300ms待機)
+	// 4. フォーカス遷移を十分に待つ (元のアプリのフォーカス復元を確実にするため300ms待機)
 	time.Sleep(300 * time.Millisecond)
 
-	// 4. OSに応じた Ctrl+V エミュレーションを実行
+	// 5. OSに応じた Ctrl+V エミュレーションを実行
 	performOSKeyPress()
+
+	// 6. 貼り付け処理の反映をわずかに待ってから、最前面表示(AlwaysOnTop)を復元する
+	time.Sleep(100 * time.Millisecond)
+	wailsRuntime.WindowSetAlwaysOnTop(a.ctx, true)
 }
 
 // GetCategories はすべての定型文カテゴリを取得します。
