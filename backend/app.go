@@ -62,6 +62,9 @@ func (a *App) Startup(ctx context.Context) {
 	})
 	a.hkMgr.Start(ctx)
 
+	// 起動時に自動で Windows スタートアップに登録
+	_ = setAutoStart(true)
+
 	// Ctrl + V 監視用のゴルーチンを開始
 	go a.watchCtrlV(ctx)
 }

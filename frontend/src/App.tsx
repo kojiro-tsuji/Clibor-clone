@@ -6,9 +6,6 @@ import {
   GetPhrases,
   AddPhrase,
   DeletePhrase,
-  SetAutoStart,
-  IsAutoStartEnabled,
-  ToggleFifoMode,
   IsFifoMode,
   GetFifoQueue,
   ClearFifoQueue
@@ -49,19 +46,9 @@ function App() {
   // キーボードナビゲーション用
   const [selectedIndex, setSelectedIndex] = useState<number>(0)
 
-  // スタートアップ設定用
-  const [isAutoStart, setIsAutoStart] = useState(false)
-
   // FIFO設定用
   const [isFifoMode, setIsFifoMode] = useState(false)
   const [fifoQueue, setFifoQueue] = useState<string[]>([])
-
-  // 自動起動の初期状態を取得
-  useEffect(() => {
-    IsAutoStartEnabled().then((enabled) => {
-      setIsAutoStart(enabled)
-    }).catch(err => console.error("Fetch autostart status error:", err))
-  }, [])
 
   // FIFO初期状態取得とイベント監視
   useEffect(() => {
@@ -83,24 +70,13 @@ function App() {
     }
   }, [])
 
-  const handleToggleFifo = () => {
-    ToggleFifoMode().then((mode) => {
-      setIsFifoMode(mode)
-    }).catch(err => console.error("Toggle FIFO error:", err))
-  }
+
 
   const handleClearFifo = () => {
     ClearFifoQueue().catch(err => console.error("Clear FIFO error:", err))
   }
 
-  const handleToggleAutoStart = () => {
-    const newValue = !isAutoStart
-    SetAutoStart(newValue).then((success: boolean) => {
-      if (success) {
-        setIsAutoStart(newValue)
-      }
-    }).catch(err => console.error("Toggle autostart error:", err))
-  }
+
 
   // 1.5秒ごとに履歴とカテゴリを取得するポーリング
   useEffect(() => {
@@ -219,18 +195,11 @@ function App() {
       {/* 枠なし移動用ドラッグヘッダー */}
       <header 
         style={{ WebkitAppRegion: 'drag' } as any}
-        className="flex items-center justify-between px-2.5 py-1.5 bg-[#f4efe6] border-b border-[#e9e3d8] shrink-0 cursor-move drag-area"
+        className="flex items-center px-2.5 py-1.5 bg-[#f4efe6] border-b border-[#e9e3d8] shrink-0 cursor-move drag-area"
       >
         <span className="text-[10px] font-bold text-[#8b7668] font-mono tracking-wider">
           Clibor {isFifoMode && <span className="text-[#5e8b68] ml-1">(FIFO)</span>}
         </span>
-        <button
-          onClick={() => Quit()}
-          className="text-[10px] px-1 text-[#a39485] hover:text-red-500 font-bold no-drag-area"
-          title="アプリ終了"
-        >
-          [✕]
-        </button>
       </header>
 
       {/* 検索バー */}
@@ -411,65 +380,45 @@ function App() {
         {/* --- 設定タブ --- */}
         {activeTab === 'settings' && (
           <div className="space-y-2 text-xs">
-            {/* スタートアップ設定 */}
-            <div className="py-1.5 border-b border-[#e9e3d8] flex items-center justify-between">
-              <div>
-                <span className="font-semibold">スタートアップに登録</span>
-                <div className="text-[9px] text-[#a39485]">PC起動時に自動で常駐します</div>
-              </div>
-              <input
-                type="checkbox"
-                checked={isAutoStart}
-                onChange={handleToggleAutoStart}
-                className="w-4 h-4 accent-[#8b7668] cursor-pointer"
-              />
-            </div>
-
-            {/* FIFO設定 */}
-            <div className="py-1.5 border-b border-[#e9e3d8] flex items-center justify-between">
-              <div>
-                <span className="font-semibold">連続コピー (FIFO) モード</span>
-                <div className="text-[9px] text-[#a39485]">コピー順に Ctrl+V で連続貼付</div>
-              </div>
-              <input
-                type="checkbox"
-                checked={isFifoMode}
-                onChange={handleToggleFifo}
-                className="w-4 h-4 accent-[#8b7668] cursor-pointer"
-              />
-            </div>
-
             {/* キー操作説明 */}
             <div className="py-1.5 border-b border-[#e9e3d8] space-y-1">
               <span className="font-semibold">操作キー</span>
               <div className="text-[10px] text-[#a39485] space-y-0.5">
                 <div className="flex justify-between">
                   <span>表示</span>
-                  <span>Ctrl 2回 / Alt+C</span>
+                  <span>Ctrl 2回 / Alt + C</span>
                 </div>
                 <div className="flex justify-between">
                   <span>FIFO</span>
-                  <span>Ctrl+G</span>
+                  <span>Ctrl + G</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>移動/貼付</span>
-                  <span>↑↓ / Ctrl+V, Enter</span>
+                  <span>移動 (履歴)</span>
+                  <span>↑ / ↓ または J / K</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>貼り付け</span>
+                  <span>Ctrl + V / Enter</span>
                 </div>
               </div>
             </div>
 
             {/* アプリ情報 */}
-            <div className="py-1.5 text-[9px] text-[#a39485] space-y-0.5">
+            <div className="py-1.5 border-b border-[#e9e3d8] text-[9px] text-[#a39485] space-y-0.5">
               <div>プロダクト: Clibor Clone (Wails MVP)</div>
               <div>バージョン: 1.1.0</div>
+              <div className="text-[8px] text-[#b8a38f] mt-1">※PC起動時に自動で常駐を開始します</div>
             </div>
 
-            <button
-              onClick={() => Quit()}
-              className="w-full py-1.5 mt-2 bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 text-red-650 rounded text-center"
-            >
-              アプリケーションを終了する
-            </button>
+            {/* アプリ終了リンク（極小化） */}
+            <div className="text-right pt-2 no-drag-area">
+              <button
+                onClick={() => Quit()}
+                className="text-[9px] text-red-500 hover:underline cursor-pointer"
+              >
+                [ アプリを完全に終了する ]
+              </button>
+            </div>
           </div>
         )}
       </main>
